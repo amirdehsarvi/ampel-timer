@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ampel">
+<link rel="apple-touch-icon" href="icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<title>Ampel-Abenteuer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: one screen. Portrait: who/theme, four timer tabs, the timer picture, status, time, racer track, big button.
+   Landscape (iPad/iPhone sideways): the picture on the left, everything else on the right.
+   Single bright look on purpose; each theme sets its own colours and its own timer picture
+   (face traffic light, hourglass, water jar or pie clock). Green/amber/red always mean the same thing. */
+:root{
+  --bg1:#fff3e0; --bg2:#ffd6a5;
+  --housing:#2b2d42; --accent:#e63946;
+  --ink:#231a3a; --muted:#5b5470;
+  --card:rgba(255,255,255,.72);
+  --green:#3ddc84; --amber:#ffc233; --red:#ff5a4e;
+  --zone:#3ddc84;
+  --glow:rgba(61,220,132,0);
+  --lamp:min(9vh, 22vw);
+  --font:'Baloo 2', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif;
+  color-scheme:light;
+}
+@supports (height:1dvh){ :root{ --lamp:min(9dvh, 22vw); } }
+html,body{height:100%}
+body{
+  margin:0;
+  background:linear-gradient(170deg, var(--bg1), var(--bg2));
+  background-color:var(--bg1);
+  color:var(--ink);
+  font-family:var(--font);
+  -webkit-user-select:none; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  overflow-x:hidden;
+}
+.app{
+  position:relative; z-index:1;
+  min-height:100%;
+  box-sizing:border-box;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:10px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  background:radial-gradient(ellipse 70% 45% at 50% 42%, var(--glow), transparent 70%);
+  transition:background .6s;
+}
+.panel{display:contents}
+.top{order:1; width:100%; max-width:560px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap}
+.modes{order:2; width:100%; max-width:560px; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px}
+.stage{order:3; display:flex; flex-direction:column; align-items:center}
+.status{order:4; margin:0; font-size:clamp(17px, 4.4vw, 26px); font-weight:700; text-align:center; min-height:1.3em; text-wrap:balance; max-width:560px}
+.time{order:5; font-size:clamp(50px, 14vw, 112px); font-weight:800; line-height:.95; font-variant-numeric:tabular-nums; letter-spacing:.02em}
+.track{order:6}
+.controls{order:7; width:100%; max-width:560px; display:flex; gap:10px}
+
+button{font:inherit; color:inherit; border:0; cursor:pointer; touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
+button:disabled{opacity:.4; cursor:default}
+
+.who{display:flex; gap:6px}
+.chip{background:var(--card); border-radius:999px; padding:6px 14px 4px; font-size:18px; font-weight:700; box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.chip[aria-pressed="true"]{background:var(--housing); color:#fff}
+.chip .count{font-weight:600; opacity:.85}
+
+.mode{
+  background:var(--card); border-radius:16px; padding:6px 2px 4px; line-height:1.05;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  box-shadow:0 3px 0 rgba(0,0,0,.08);
+}
+.mode .em{font-size:clamp(22px, 6vw, 30px); line-height:1.1}
+.mode .lbl{font-size:clamp(13px, 3.4vw, 17px); font-weight:800}
+.mode small{font-size:clamp(11px, 3vw, 14px); font-weight:600; color:var(--muted)}
+.mode[aria-selected="true"]{background:var(--housing); color:#fff}
+.mode[aria-selected="true"] small{color:rgba(255,255,255,.8)}
+
+.hat,.feet{font-size:calc(var(--lamp) * .42); line-height:1; height:calc(var(--lamp) * .5); display:flex; align-items:center; justify-content:center; gap:calc(var(--lamp) * .35)}
+.hat{margin-bottom:-4px; animation:bob 3s ease-in-out infinite}
+.feet{margin-top:-2px}
+
+/* ---- picture 1: face traffic light ---- */
+.vis{position:relative; display:none; transform-origin:50% 100%}
+.vis.show{display:block}
+.vis.hurry{animation:wiggle 1.4s ease-in-out infinite}
+.light{
+  background:var(--housing);
+  border-radius:calc(var(--lamp) * .45);
+  padding:calc(var(--lamp) * .12);
+  display:flex; flex-direction:column; gap:calc(var(--lamp) * .1);
+  box-shadow:0 10px 0 rgba(0,0,0,.18), 0 18px 34px rgba(0,0,0,.18), inset 0 3px 0 rgba(255,255,255,.12);
+}
+.lamp{
+  width:var(--lamp); height:var(--lamp); border-radius:50%;
+  background:rgba(255,255,255,.13);
+  display:grid; place-items:center;
+  box-shadow:inset 0 5px 12px rgba(0,0,0,.35);
+  transition:background-color .35s, box-shadow .35s;
+}
+.lamp.on.r,.light.party .lamp.r{background:var(--red); box-shadow:0 0 calc(var(--lamp) * .4) var(--red), inset 0 -6px 10px rgba(0,0,0,.15)}
+.lamp.on.a,.light.party .lamp.a{background:var(--amber); box-shadow:0 0 calc(var(--lamp) * .4) var(--amber), inset 0 -6px 10px rgba(0,0,0,.15)}
+.lamp.on.g,.light.party .lamp.g{background:var(--green); box-shadow:0 0 calc(var(--lamp) * .4) var(--green), inset 0 -6px 10px rgba(0,0,0,.15)}
+.lamp.pop{animation:pop .7s cubic-bezier(.3,1.7,.5,1)}
+.light.party .lamp{animation:jump .9s ease-in-out infinite}
+.light.party .lamp.a{animation-delay:.15s}
+.light.party .lamp.g{animation-delay:.3s}
+
+/* faces (used on lamps and on the mood badge) */
+.face{width:80%; height:80%; overflow:visible}
+.face path,.face ellipse{fill:none; stroke:#2a1d3f; stroke-width:4.5; stroke-linecap:round; stroke-linejoin:round}
+.face .fill{fill:#2a1d3f; stroke:none}
+.face .shine{fill:#fff; stroke:none}
+.face .cheek{fill:rgba(255,92,128,.45); stroke:none}
+.face .tongue{fill:#ff7b8a; stroke:none}
+.face .drop{fill:#7cc8ff; stroke:none}
+.face .asleep{opacity:.32}
+.face .asleep path{stroke:#fff}
+.face .awake,.face .happy{display:none}
+.lamp.on .face .asleep{display:none}
+.lamp.on .face .awake{display:inline}
+.light.party .face .asleep,.light.party .face .awake{display:none}
+.light.party .face .happy{display:inline}
+.eyes{transform-box:fill-box; transform-origin:center; animation:blink 4.5s infinite}
+
+/* mood badge for the other pictures */
+.mood{
+  position:absolute; width:calc(var(--lamp) * 1.05); height:calc(var(--lamp) * 1.05); border-radius:50%;
+  right:calc(var(--lamp) * -.45); bottom:calc(var(--lamp) * .15);
+  background:var(--zone); display:grid; place-items:center;
+  box-shadow:0 0 calc(var(--lamp) * .35) var(--zone), 0 4px 0 rgba(0,0,0,.15);
+  transition:background-color .35s, box-shadow .35s;
+}
+.mood .face{display:none}
+.mood .face.cur{display:block}
+.mood .face .asleep{display:none}
+.mood .face .awake{display:inline}
+.mood.party .face .awake{display:none}
+.mood.party .face .happy{display:inline}
+.mood.pop{animation:pop .7s cubic-bezier(.3,1.7,.5,1)}
+.mood.party{animation:jump .9s ease-in-out infinite}
+
+/* ---- picture 2: hourglass ---- */
+.sandsvg,.glasssvg{width:calc(var(--lamp) * 2.2); height:calc(var(--lamp) * 3.6); display:block; overflow:visible}
+.sand{fill:var(--zone); transition:fill .35s}
+.frame{fill:var(--housing)}
+.glassline{fill:rgba(255,255,255,.45); stroke:var(--housing); stroke-width:3.5}
+.stream{stroke:var(--zone); stroke-width:3; stroke-dasharray:4 5; animation:pour .5s linear infinite}
+
+/* ---- picture 3: water jar ---- */
+.liquid{fill:var(--zone); opacity:.88; transition:fill .35s}
+.wave{animation:wave 2.4s linear infinite}
+.bubble{fill:rgba(255,255,255,.7); animation:rise 3s ease-in infinite}
+.bubble:nth-child(2){animation-delay:1s}
+.bubble:nth-child(3){animation-delay:2s}
+.jar{fill:rgba(255,255,255,.35); stroke:var(--housing); stroke-width:4}
+.lid{fill:var(--housing)}
+
+/* ---- picture 4: pie clock ---- */
+.vis.pie .mood{left:50%; top:50%; right:auto; bottom:auto; transform:translate(-50%, -50%); width:calc(var(--lamp) * 1.5); height:calc(var(--lamp) * 1.5)}
+.vis.pie .mood.pop,.vis.pie .mood.party{animation:none}
+.piesvg{width:calc(var(--lamp) * 3.5); height:calc(var(--lamp) * 3.5); display:block}
+.pietrack{fill:none; stroke:rgba(255,255,255,.55); stroke-width:22}
+.piearc{fill:none; stroke:var(--zone); stroke-width:22; transition:stroke-dashoffset .5s linear, stroke .35s}
+.pierim{fill:none; stroke:var(--housing); stroke-width:5}
+.tick{fill:var(--housing)}
+
+.track{
+  width:100%; max-width:560px; height:52px; position:relative;
+  background:var(--card); border-radius:999px;
+  box-shadow:inset 0 3px 0 rgba(0,0,0,.06);
+}
+.track::before{content:""; position:absolute; left:28px; right:52px; top:50%; border-top:3px dashed rgba(35,26,58,.25)}
+.runner{position:absolute; top:50%; left:6px; font-size:34px; line-height:1; transform:translateY(-55%); transition:left .5s linear}
+.runner.flip{transform:translateY(-55%) scaleX(-1)}
+.goal{position:absolute; right:10px; top:50%; transform:translateY(-55%); font-size:30px; line-height:1}
+
+.go{
+  flex:3; background:var(--accent); color:#fff; border-radius:22px;
+  font-size:clamp(24px, 6.5vw, 32px); font-weight:800; padding:12px 0 8px;
+  box-shadow:0 6px 0 rgba(0,0,0,.2);
+}
+.go:active{transform:translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.go.running{background:var(--housing)}
+.small{flex:1; background:var(--card); border-radius:22px; font-size:18px; font-weight:700; padding:10px 6px 6px; box-shadow:0 4px 0 rgba(0,0,0,.08)}
+.small.armed{background:var(--amber)}
+
+.deco{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden}
+.deco span{position:absolute; font-size:clamp(26px, 6vw, 44px); opacity:.5; animation:float 6s ease-in-out infinite}
+
+.party-card[hidden]{display:none}
+.party-card{
+  position:fixed; inset:0; z-index:20; display:grid; place-items:center;
+  background:rgba(35,26,58,.35);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.party-box{background:#fff; border-radius:28px; padding:24px 22px 20px; width:100%; max-width:420px; text-align:center; box-shadow:0 12px 0 rgba(0,0,0,.15)}
+.party-emoji{font-size:72px; line-height:1}
+.party-title{margin:8px 0 2px; font-size:30px; font-weight:800; line-height:1.1; text-wrap:balance}
+.party-sub{margin:0 0 16px; font-size:19px; color:var(--muted)}
+.party-box .go{width:100%; display:block; margin-bottom:10px}
+.party-box .go[hidden]{display:none}
+.party-box .small{width:100%; display:block}
+.confetti{position:fixed; top:-50px; z-index:30; pointer-events:none; font-size:30px; animation:fall 2.8s linear forwards}
+
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-2.5deg)}75%{transform:rotate(2.5deg)}}
+@keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-10%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-12px) rotate(4deg)}}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+@keyframes pour{to{stroke-dashoffset:-9}}
+@keyframes wave{to{transform:translateX(-40px)}}
+@keyframes rise{0%{transform:translateY(0); opacity:0}15%{opacity:1}100%{transform:translateY(-90px); opacity:0}}
+
+@media (orientation:landscape){
+  :root{--lamp:min(18vh, 12vw)}
+  @supports (height:1dvh){ :root{ --lamp:min(18dvh, 12vw); } }
+  .app{flex-direction:row; justify-content:center; align-items:center; gap:clamp(24px, 6vw, 72px); min-height:100%}
+  .stage{order:0}
+  .panel{order:1; display:flex; flex-direction:column; align-items:center; gap:8px; width:min(540px, 54vw)}
+  .time{font-size:clamp(50px, 10vw, 120px)}
+}
+@media (min-width:700px) and (orientation:portrait){
+  :root{--lamp:min(11vh, 19vw)}
+  @supports (height:1dvh){ :root{ --lamp:min(11dvh, 19vw); } }
+  .chip{font-size:22px; padding:8px 18px 6px}
+  .mode{padding:10px 4px 8px}
+  .track{height:62px}
+  .runner{font-size:44px}
+  .goal{font-size:40px}
+}
+@media (prefers-reduced-motion:reduce){
+  .eyes,.hat,.deco span,.vis.hurry,.light.party .lamp,.lamp.pop,.mood.pop,.mood.party,.stream,.wave,.bubble{animation:none}
+  .runner,.piearc{transition:none}
+}
+</style>
+
+<div class="deco" id="deco" aria-hidden="true"></div>
+
+<main class="app">
+  <section class="stage" aria-label="Timer-Bild">
+    <div class="hat" id="hat" aria-hidden="true"></div>
+
+    <div class="vis" id="vis-ampel">
+      <div class="light" id="light">
+        <div class="lamp r" id="lampR"></div>
+        <div class="lamp a" id="lampA"></div>
+        <div class="lamp g" id="lampG"></div>
+      </div>
+    </div>
+
+    <div class="vis" id="vis-sand">
+      <svg class="sandsvg" viewBox="0 0 120 200" aria-hidden="true">
+        <defs>
+          <clipPath id="clipTop"><path d="M24 22 C24 70 55 80 56 100 L64 100 C65 80 96 70 96 22 Z"/></clipPath>
+          <clipPath id="clipBot"><path d="M56 100 C55 120 24 130 24 178 L96 178 C96 130 65 120 64 100 Z"/></clipPath>
+        </defs>
+        <path class="glassline" d="M24 22 C24 70 55 80 56 100 C55 120 24 130 24 178 L96 178 C96 130 65 120 64 100 C65 80 96 70 96 22 Z"/>
+        <g clip-path="url(#clipTop)"><rect class="sand" id="sandTop" x="0" y="26" width="120" height="74"/></g>
+        <g clip-path="url(#clipBot)"><rect class="sand" id="sandBot" x="0" y="178" width="120" height="0"/></g>
+        <line class="stream" id="stream" x1="60" y1="100" x2="60" y2="176"/>
+        <rect class="frame" x="8" y="8" width="104" height="16" rx="7"/>
+        <rect class="frame" x="8" y="176" width="104" height="16" rx="7"/>
+        <rect class="frame" x="12" y="22" width="7" height="156" rx="3"/>
+        <rect class="frame" x="101" y="22" width="7" height="156" rx="3"/>
+      </svg>
+      <div class="mood" id="mood-sand"></div>
+    </div>
+
+    <div class="vis" id="vis-glass">
+      <svg class="glasssvg" viewBox="0 0 120 200" aria-hidden="true">
+        <defs><clipPath id="clipJar"><rect x="20" y="30" width="80" height="158" rx="22"/></clipPath></defs>
+        <rect class="jar" x="20" y="30" width="80" height="158" rx="22"/>
+        <g clip-path="url(#clipJar)">
+          <g id="liquid" transform="translate(0 0)">
+            <path class="liquid wave" d="M-40 40 Q-30 32 -20 40 T0 40 T20 40 T40 40 T60 40 T80 40 T100 40 T120 40 T140 40 T160 40 V260 H-40 Z"/>
+            <g><circle class="bubble" cx="44" cy="180" r="4"/><circle class="bubble" cx="66" cy="184" r="3"/><circle class="bubble" cx="80" cy="182" r="5"/></g>
+          </g>
+        </g>
+        <rect class="jar" x="20" y="30" width="80" height="158" rx="22" style="fill:none"/>
+        <rect class="lid" x="28" y="16" width="64" height="18" rx="7"/>
+      </svg>
+      <div class="mood" id="mood-glass"></div>
+    </div>
+
+    <div class="vis pie" id="vis-pie">
+      <svg class="piesvg" viewBox="0 0 120 120" aria-hidden="true">
+        <g id="ticks"></g>
+        <circle class="pietrack" cx="60" cy="60" r="44"/>
+        <circle class="piearc" id="arc" cx="60" cy="60" r="44" transform="rotate(-90 60 60)" stroke-dasharray="276.46" stroke-dashoffset="0"/>
+        <circle class="pierim" cx="60" cy="60" r="56"/>
+      </svg>
+      <div class="mood" id="mood-pie"></div>
+    </div>
+
+    <div class="feet" id="feet" aria-hidden="true"></div>
+  </section>
+
+  <div class="panel">
+    <div class="top">
+      <div class="who" role="group" aria-label="Wer ist dran?">
+        <button type="button" class="chip" id="kid0" data-kid="Ahoora">Ahoora <span class="count"></span></button>
+        <button type="button" class="chip" id="kid1" data-kid="Ila">Ila <span class="count"></span></button>
+      </div>
+      <button type="button" class="chip" id="themeBtn" aria-label="Anderes Thema">🎲 <span id="themeName"></span></button>
+    </div>
+
+    <div class="modes" id="modes" role="tablist" aria-label="Timer"></div>
+
+    <p class="status" id="status" aria-live="polite"></p>
+    <div class="time" id="time">20:00</div>
+
+    <div class="track" aria-hidden="true">
+      <span class="runner" id="runner"></span>
+      <span class="goal" id="goal"></span>
+    </div>
+
+    <div class="controls">
+      <button type="button" class="go" id="go">Start ▶</button>
+      <button type="button" class="small" id="reset">Neu</button>
+    </div>
+  </div>
+</main>
+
+<div class="party-card" id="party" hidden>
+  <div class="party-box" role="dialog" aria-modal="true" aria-labelledby="partyTitle">
+    <div class="party-emoji" id="partyEmoji">🎉</div>
+    <p class="party-title" id="partyTitle"></p>
+    <p class="party-sub" id="partySub"></p>
+    <button type="button" class="go" id="partyNext"></button>
+    <button type="button" class="small" id="partyClose">Schließen</button>
+  </div>
+</div>
+
+<script>
+// ---------- themes: colours, the timer picture, hat and feet, the racer and its goal ----------
+const THEMES = [
+  { name:'Rennstrecke', vis:'ampel', bg1:'#fff3e0', bg2:'#ffc98f', housing:'#2b2d42', accent:'#e63946', hat:'🏁', feet:['🛞','🛞'], runner:'🏎️', flip:true,  goal:'🏁', deco:['🏆','⛽','🚦','🛞','⭐','🏎️'] },
+  { name:'Weltraum',    vis:'pie',   bg1:'#e0e7ff', bg2:'#b4bffc', housing:'#312e81', accent:'#4f46e5', hat:'👽', feet:['🔥','🔥'], runner:'🚀', flip:false, goal:'🪐', deco:['⭐','🌙','🛰️','☄️','🌟','🪐'] },
+  { name:'Dschungel',   vis:'sand',  bg1:'#ecfccb', bg2:'#a7f0c0', housing:'#14532d', accent:'#16a34a', hat:'🌴', feet:['🐾','🐾'], runner:'🐒', flip:false, goal:'🍌', deco:['🦜','🍃','🐍','🌺','🦋','🍌'] },
+  { name:'Unterwasser', vis:'glass', bg1:'#e0f7fa', bg2:'#93e6f5', housing:'#0e4a6e', accent:'#0891b2', hat:'🐙', feet:['🫧','🫧'], runner:'🐠', flip:true,  goal:'🐚', deco:['🐟','🦀','🐳','🫧','🪸','🐡'] },
+  { name:'Dinoland',    vis:'sand',  bg1:'#fef9c3', bg2:'#c7ee8f', housing:'#3f6212', accent:'#65a30d', hat:'🦕', feet:['🥚','🥚'], runner:'🦖', flip:true,  goal:'🥚', deco:['🌋','🦴','🌿','🦕','🪨','🌴'] },
+  { name:'Piratenschiff', vis:'sand', bg1:'#fdf2e9', bg2:'#fbc58e', housing:'#5b3a1e', accent:'#c2410c', hat:'🏴‍☠️', feet:['⚓'], runner:'⛵', flip:true, goal:'💰', deco:['🦜','🗺️','💎','🪙','🌊','⚓'] },
+  { name:'Einhornland', vis:'pie',   bg1:'#fce7f3', bg2:'#dcc4fb', housing:'#6b21a8', accent:'#c026d3', hat:'🦄', feet:['☁️','☁️'], runner:'🦄', flip:true,  goal:'🌈', deco:['✨','🌈','💖','⭐','🍭','🌸'] },
+  { name:'Fußballstadion', vis:'ampel', bg1:'#dcfce7', bg2:'#8fe4ad', housing:'#1e3a2b', accent:'#15803d', hat:'🏆', feet:['⚽','⚽'], runner:'⚽', flip:false, goal:'🥅', deco:['🥇','📣','🧤','⭐','👟','🏆'] },
+  { name:'Zirkus',      vis:'ampel', bg1:'#fff1f2', bg2:'#fdb8c4', housing:'#9f1239', accent:'#e11d48', hat:'🎩', feet:['🎈','🎈'], runner:'🤹', flip:false, goal:'🎪', deco:['🎈','🐘','🦁','🍿','🎉','🤡'] },
+  { name:'Zauberlabor', vis:'glass', bg1:'#f3e8ff', bg2:'#c4b5fd', housing:'#4c1d95', accent:'#7c3aed', hat:'🧙', feet:['✨','✨'], runner:'🧹', flip:false, goal:'🏰', deco:['🔮','⭐','🦉','🍄','✨','📜'] },
+];
+
+// ---------- the four separate timers ----------
+const MODES = {
+  hw:   { min:20, em:'📚', lbl:'Aufgaben', star:true,  next:'br', party:'🎉',
+          ready:k => 'Bereit für die Hausaufgaben, ' + k + '?',
+          g:'Grün: Du hast viel Zeit 😊', a:'Gelb: Weiter so, die Zeit wird knapp', r:'Rot: Endspurt! 💪',
+          done:'Hausaufgaben geschafft! 🎉', title:k => 'Super, ' + k + '! Geschafft!' },
+  br:   { min:5,  em:'🧃', lbl:'Pause',    star:false, next:'hw', party:'⏰ 📚',
+          ready:k => 'Pause für ' + k + '? 🧃',
+          g:'Pause! Entspann dich 😌', a:'Gelb: Die Pause ist bald vorbei', r:'Rot: Gleich geht\'s weiter',
+          done:'Pause vorbei!', title:() => 'Pause vorbei!' },
+  eat:  { min:20, em:'🍽️', lbl:'Essen',    star:true,  next:null, party:'😋 🍽️',
+          ready:k => 'Guten Appetit, ' + k + '! 🍽️',
+          g:'Grün: In Ruhe essen 😋', a:'Gelb: Weiter essen, die Zeit wird knapp', r:'Rot: Die letzten Bissen! 🥄',
+          done:'Fertig gegessen! 🍽️', title:k => 'Lecker, ' + k + '! Fertig gegessen!' },
+  fold: { min:5,  em:'👕', lbl:'Falten',   star:true,  next:null, party:'👕 ✨',
+          ready:k => 'Kleidung ausziehen und falten, ' + k + '! 👕',
+          g:'Grün: Ausziehen und schön falten 👕', a:'Gelb: Weiter falten, die Zeit wird knapp', r:'Rot: Schnell fertig falten! 🧺',
+          done:'Alles gefaltet! ✨', title:k => 'Super, ' + k + '! Alles ordentlich gefaltet!' },
+};
+const ORDER = ['hw', 'br', 'eat', 'fold'];
+const timers = {};
+ORDER.forEach(k => { const ms = MODES[k].min * 60000; timers[k] = { total:ms, remaining:ms, endAt:0, running:false, done:false }; });
+
+let mode = 'hw', theme = null, kid = 'Ahoora', tick = null, wake = null, resetArmed = null, lastZone = null;
+let stars = { Ahoora:0, Ila:0 };
+const $ = id => document.getElementById(id);
+try { stars = Object.assign(stars, JSON.parse(localStorage.getItem('ampelStars') || '{}')); } catch (_) {}
+try { const k = localStorage.getItem('ampelKid'); if (k === 'Ahoora' || k === 'Ila') kid = k; } catch (_) {}
+
+// ---------- faces ----------
+function faceSVG(k, extraClass) {
+  const cheeks = '<circle class="cheek" cx="23" cy="57" r="7"/><circle class="cheek" cx="77" cy="57" r="7"/>';
+  const awakeExtras = k === 'g'
+    ? cheeks + '<path class="fill" d="M30 58 Q50 86 70 58 Z"/><path class="tongue" d="M41 69 Q50 79 59 69 Q50 73 41 69 Z"/>'
+    : k === 'a'
+    ? '<path d="M27 29 L44 35"/><path d="M73 29 L56 35"/><path d="M36 66 Q50 75 64 66"/><path class="drop" d="M84 20 Q77 30 84 34 Q91 30 84 20 Z"/>'
+    : '<path d="M26 30 Q35 20 44 28"/><path d="M56 28 Q65 20 74 30"/><ellipse class="fill" cx="50" cy="69" rx="8" ry="10"/>';
+  return '<svg class="face ' + (extraClass || '') + '" data-k="' + k + '" viewBox="0 0 100 100" aria-hidden="true">' +
+    '<g class="asleep"><path d="M28 46 Q36 52 44 46"/><path d="M56 46 Q64 52 72 46"/><path d="M44 66 H56"/></g>' +
+    '<g class="awake"><g class="eyes"><circle class="fill" cx="36" cy="44" r="7"/><circle class="fill" cx="64" cy="44" r="7"/>' +
+    '<circle class="shine" cx="38.5" cy="41.5" r="2.3"/><circle class="shine" cx="66.5" cy="41.5" r="2.3"/></g>' + awakeExtras + '</g>' +
+    '<g class="happy"><path d="M27 47 Q36 36 45 47"/><path d="M55 47 Q64 36 73 47"/>' + cheeks +
+    '<path class="fill" d="M28 58 Q50 92 72 58 Z"/><path class="tongue" d="M40 71 Q50 83 60 71 Q50 76 40 71 Z"/></g>' +
+    '</svg>';
+}
+$('lampR').innerHTML = faceSVG('r');
+$('lampA').innerHTML = faceSVG('a');
+$('lampG').innerHTML = faceSVG('g');
+['mood-sand', 'mood-glass', 'mood-pie'].forEach(id => { $(id).innerHTML = faceSVG('g') + faceSVG('a') + faceSVG('r'); });
+// clock ticks around the pie
+$('ticks').innerHTML = Array.from({ length:12 }, (_, i) => {
+  const a = (i / 12) * Math.PI * 2, x = 60 + Math.sin(a) * 56, y = 60 - Math.cos(a) * 56;
+  return '<circle class="tick" cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (i % 3 === 0 ? 3.4 : 2) + '"/>';
+}).join('');
+
+// ---------- mode tabs ----------
+$('modes').innerHTML = ORDER.map(k =>
+  '<button type="button" class="mode" role="tab" id="m-' + k + '" data-mode="' + k + '">' +
+  '<span class="em">' + MODES[k].em + '</span><span class="lbl">' + MODES[k].lbl + '</span><small>' + MODES[k].min + ' Min</small></button>'
+).join('');
+
+// ---------- theme ----------
+function applyTheme(next) {
+  theme = next;
+  const r = document.documentElement.style;
+  r.setProperty('--bg1', theme.bg1); r.setProperty('--bg2', theme.bg2);
+  r.setProperty('--housing', theme.housing); r.setProperty('--accent', theme.accent);
+  $('themeName').textContent = theme.name;
+  $('hat').textContent = theme.hat;
+  $('feet').innerHTML = theme.feet.map(f => '<span>' + f + '</span>').join('');
+  $('runner').textContent = theme.runner;
+  $('runner').classList.toggle('flip', theme.flip);
+  $('goal').textContent = theme.goal;
+  ['ampel', 'sand', 'glass', 'pie'].forEach(v => $('vis-' + v).classList.toggle('show', v === theme.vis));
+  const spots = [[4,14],[86,10],[6,46],[88,40],[10,80],[84,76],[46,4],[50,93]];
+  $('deco').innerHTML = spots.map((p, i) =>
+    '<span style="left:' + p[0] + '%;top:' + p[1] + '%;animation-delay:' + (i * 0.7) + 's">' + theme.deco[i % theme.deco.length] + '</span>').join('');
+  lastZone = null;
+}
+function randomTheme() {
+  let next;
+  do { next = THEMES[Math.floor(Math.random() * THEMES.length)]; } while (THEMES.length > 1 && next === theme);
+  applyTheme(next);
+}
+
+// ---------- helpers ----------
+function fmt(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+// Green while more than half is left, amber down to a quarter, red for the last quarter.
+function zoneOf(t) {
+  if (t.done) return 'done';
+  if (!t.running && t.remaining >= t.total) return 'ready';
+  const f = t.remaining / t.total;
+  return f > 0.5 ? 'g' : f > 0.25 ? 'a' : 'r';
+}
+function saveStars() { try { localStorage.setItem('ampelStars', JSON.stringify(stars)); } catch (_) {} }
+function popEl(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+
+// ---------- render ----------
+const ZCOL = { g:'#3ddc84', a:'#ffc233', r:'#ff5a4e', ready:'#3ddc84', done:'#3ddc84' };
+const GLOW = { g:'rgba(61,220,132,.30)', a:'rgba(255,194,51,.34)', r:'rgba(255,90,78,.30)', done:'rgba(255,255,255,.55)', ready:'rgba(61,220,132,.18)' };
+
+function render() {
+  const t = timers[mode], m = MODES[mode];
+  const z = zoneOf(t);
+  const changed = lastZone !== null && z !== lastZone;
+  const f = z === 'done' ? 0 : Math.min(1, Math.max(0, t.remaining / t.total));
+  document.documentElement.style.setProperty('--zone', ZCOL[z]);
+  document.documentElement.style.setProperty('--glow', GLOW[z]);
+
+  // traffic light
+  const lit = { r: z === 'r', a: z === 'a', g: z === 'g' || z === 'ready' };
+  ['R','A','G'].forEach(L => {
+    const el = $('lamp' + L), key = L.toLowerCase();
+    el.classList.toggle('on', lit[key] || z === 'done');
+    if (changed && lit[key] && theme.vis === 'ampel') popEl(el);
+  });
+  $('light').classList.toggle('party', z === 'done');
+
+  // mood badges on the other pictures
+  const faceKey = (z === 'a' || z === 'r') ? z : 'g';
+  ['mood-sand', 'mood-glass', 'mood-pie'].forEach(id => {
+    const el = $(id);
+    el.querySelectorAll('.face').forEach(s => s.classList.toggle('cur', s.dataset.k === faceKey));
+    el.classList.toggle('party', z === 'done');
+    if (changed && theme.vis !== 'ampel' && z !== 'done') popEl(el);
+  });
+
+  // hourglass
+  $('sandTop').setAttribute('y', (100 - 74 * f).toFixed(1));
+  $('sandTop').setAttribute('height', (74 * f).toFixed(1));
+  $('sandBot').setAttribute('y', (178 - 70 * (1 - f)).toFixed(1));
+  $('sandBot').setAttribute('height', (70 * (1 - f)).toFixed(1));
+  $('stream').style.opacity = t.running && f > 0 ? '1' : '0';
+  // water jar: full surface at y=40, empty at y=188
+  $('liquid').setAttribute('transform', 'translate(0 ' + (148 * (1 - f)).toFixed(1) + ')');
+  // pie clock
+  $('arc').style.strokeDashoffset = (276.46 * (1 - f)).toFixed(2);
+
+  const vis = $('vis-' + theme.vis);
+  vis.classList.toggle('hurry', z === 'r' && t.running);
+
+  $('time').textContent = fmt(t.remaining);
+  const pausedMid = !t.running && !t.done && t.remaining < t.total;
+  $('status').textContent = z === 'done' ? m.done : pausedMid ? 'Angehalten ⏸' : z === 'ready' ? m.ready(kid) : m[z];
+
+  const p = Math.min(1, Math.max(0, 1 - t.remaining / t.total));
+  $('runner').style.left = 'calc(6px + ' + (p * 100) + '% - ' + (p * 58) + 'px)';
+
+  const go = $('go');
+  go.textContent = t.running ? 'Pause ⏸' : t.done ? 'Nochmal ▶' : pausedMid ? 'Weiter ▶' : 'Start ▶';
+  go.classList.toggle('running', t.running);
+
+  const anyRunning = ORDER.some(k => timers[k].running);
+  ORDER.forEach(k => {
+    const b = $('m-' + k);
+    b.setAttribute('aria-selected', String(k === mode));
+    b.disabled = anyRunning && k !== mode;
+  });
+  ['kid0', 'kid1'].forEach(id => {
+    const b = $(id), name = b.dataset.kid;
+    b.setAttribute('aria-pressed', String(name === kid));
+    b.querySelector('.count').textContent = '⭐' + (stars[name] || 0);
+    b.disabled = anyRunning;
+  });
+  lastZone = z;
+}
+
+// ---------- timer engine ----------
+function tickAll() {
+  const t = timers[mode];
+  if (!t.running) return;
+  t.remaining = Math.max(0, t.endAt - Date.now());
+  if (t.remaining <= 0) finish(mode);
+  render();
+}
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wake) { wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); } } catch (_) {}
+}
+function letSleep() { try { if (wake) wake.release(); } catch (_) {} wake = null; }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') { if (timers[mode].running) keepAwake(); tickAll(); }
+});
+
+function start() {
+  const t = timers[mode];
+  if (t.done) { t.done = false; t.remaining = t.total; }
+  t.endAt = Date.now() + t.remaining;
+  t.running = true;
+  keepAwake();
+  clearInterval(tick); tick = setInterval(tickAll, 250);
+  render();
+}
+function pause() {
+  const t = timers[mode];
+  t.remaining = Math.max(0, t.endAt - Date.now());
+  t.running = false;
+  clearInterval(tick); letSleep();
+  render();
+}
+function resetTimer(which) {
+  const t = timers[which];
+  t.running = false; t.done = false; t.remaining = t.total;
+  if (which === mode) { clearInterval(tick); letSleep(); }
+}
+function switchMode(next) {
+  if (ORDER.some(k => timers[k].running && k !== next)) return;
+  mode = next; lastZone = null;
+  render();
+}
+function finish(which) {
+  const t = timers[which];
+  t.running = false; t.done = true; t.remaining = 0;
+  clearInterval(tick); letSleep();
+  if (MODES[which].star) { stars[kid] = (stars[kid] || 0) + 1; saveStars(); }
+  celebrate(which);
+}
+
+// ---------- celebration ----------
+function confetti() {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const pool = theme.deco.concat(['⭐', '🎉', '✨', MODES[mode].em]);
+  for (let i = 0; i < 40; i++) {
+    const d = document.createElement('div');
+    d.className = 'confetti';
+    d.textContent = pool[i % pool.length];
+    d.style.left = (Math.random() * 100) + 'vw';
+    d.style.animationDelay = (Math.random() * 0.8) + 's';
+    document.body.appendChild(d);
+    setTimeout(() => d.remove(), 4000);
+  }
+}
+function celebrate(which) {
+  const m = MODES[which];
+  confetti();
+  $('partyEmoji').textContent = which === 'hw' ? theme.goal + ' 🎉' : m.party;
+  $('partyTitle').textContent = m.title(kid);
+  $('partySub').textContent = m.star
+    ? 'Du bekommst einen Stern ⭐ Jetzt hast du ' + stars[kid] + '.'
+    : 'Zurück an die Aufgaben, ' + kid + '. Du schaffst das!';
+  const nb = $('partyNext');
+  if (m.next) {
+    const n = MODES[m.next];
+    nb.hidden = false;
+    nb.textContent = n.lbl + ' starten ' + n.em + ' ' + n.min + ' Min';
+    nb.onclick = () => { $('party').hidden = true; resetTimer(m.next); switchMode(m.next); start(); };
+  } else {
+    nb.hidden = true;
+    nb.onclick = null;
+  }
+  $('party').hidden = false;
+}
+$('partyClose').onclick = () => { $('party').hidden = true; };
+
+// ---------- buttons ----------
+$('go').onclick = () => { timers[mode].running ? pause() : start(); };
+ORDER.forEach(k => { $('m-' + k).onclick = () => switchMode(k); });
+$('themeBtn').onclick = () => { randomTheme(); render(); };
+['kid0', 'kid1'].forEach(id => {
+  $(id).onclick = () => {
+    kid = $(id).dataset.kid;
+    try { localStorage.setItem('ampelKid', kid); } catch (_) {}
+    render();
+  };
+});
+// "Neu" needs two taps, so a child cannot restart the timer by accident.
+$('reset').onclick = () => {
+  const b = $('reset');
+  if (!resetArmed) {
+    b.textContent = 'Nochmal?'; b.classList.add('armed');
+    resetArmed = setTimeout(() => { resetArmed = null; b.textContent = 'Neu'; b.classList.remove('armed'); }, 3000);
+    return;
+  }
+  clearTimeout(resetArmed); resetArmed = null;
+  b.textContent = 'Neu'; b.classList.remove('armed');
+  resetTimer(mode); lastZone = null; render();
+};
+
+randomTheme();
+render();
+</script>
+
+</body>
+</html>
