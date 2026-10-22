@@ -68,6 +68,8 @@ button:disabled{opacity:.4; cursor:default}
 .chip{background:var(--card); border-radius:999px; padding:6px 14px 4px; font-size:18px; font-weight:700; box-shadow:0 2px 0 rgba(0,0,0,.08)}
 .chip[aria-pressed="true"]{background:var(--housing); color:#fff}
 .chip .count{font-weight:600; opacity:.85}
+.team{background:var(--housing); color:#fff}
+.team.pop{animation:pop .7s cubic-bezier(.3,1.7,.5,1)}
 
 .mode{
   background:var(--card); border-radius:16px; padding:6px 2px 4px; line-height:1.05;
@@ -305,10 +307,7 @@ button:disabled{opacity:.4; cursor:default}
 
   <div class="panel">
     <div class="top">
-      <div class="who" role="group" aria-label="Wer ist dran?">
-        <button type="button" class="chip" id="kid0" data-kid="Ahoora">Ahoora <span class="count"></span></button>
-        <button type="button" class="chip" id="kid1" data-kid="Ila">Ila <span class="count"></span></button>
-      </div>
+      <div class="chip team" id="team" aria-live="polite">⭐ Unsere Sterne: <span id="teamCount">0</span></div>
       <button type="button" class="chip" id="themeBtn" aria-label="Anderes Thema">🎲 <span id="themeName"></span></button>
     </div>
 
@@ -357,31 +356,39 @@ const THEMES = [
 // ---------- the four separate timers ----------
 const MODES = {
   hw:   { min:20, em:'📚', lbl:'Aufgaben', star:true,  next:'br', party:'🎉',
-          ready:k => 'Bereit für die Hausaufgaben, ' + k + '?',
-          g:'Grün: Du hast viel Zeit 😊', a:'Gelb: Weiter so, die Zeit wird knapp', r:'Rot: Endspurt! 💪',
-          done:'Hausaufgaben geschafft! 🎉', title:k => 'Super, ' + k + '! Geschafft!' },
+          ready:'Bereit für die Hausaufgaben? 📚',
+          g:'Grün: Noch viel Zeit 😊', a:'Gelb: Weiter so, die Zeit wird knapp', r:'Rot: Endspurt! 💪',
+          done:'Hausaufgaben geschafft! 🎉', title:'Super! Hausaufgaben geschafft!' },
   br:   { min:5,  em:'🧃', lbl:'Pause',    star:false, next:'hw', party:'⏰ 📚',
-          ready:k => 'Pause für ' + k + '? 🧃',
-          g:'Pause! Entspann dich 😌', a:'Gelb: Die Pause ist bald vorbei', r:'Rot: Gleich geht\'s weiter',
-          done:'Pause vorbei!', title:() => 'Pause vorbei!' },
+          ready:'Bereit für die Pause? 🧃',
+          g:'Pause! Entspannen 😌', a:'Gelb: Die Pause ist bald vorbei', r:'Rot: Gleich geht\'s weiter',
+          done:'Pause vorbei!', title:'Pause vorbei!' },
   eat:  { min:20, em:'🍽️', lbl:'Essen',    star:true,  next:null, party:'😋 🍽️',
-          ready:k => 'Guten Appetit, ' + k + '! 🍽️',
+          ready:'Guten Appetit! 🍽️',
           g:'Grün: In Ruhe essen 😋', a:'Gelb: Weiter essen, die Zeit wird knapp', r:'Rot: Die letzten Bissen! 🥄',
-          done:'Fertig gegessen! 🍽️', title:k => 'Lecker, ' + k + '! Fertig gegessen!' },
+          done:'Fertig gegessen! 🍽️', title:'Lecker! Fertig gegessen!' },
   fold: { min:5,  em:'👕', lbl:'Falten',   star:true,  next:null, party:'👕 ✨',
-          ready:k => 'Kleidung ausziehen und falten, ' + k + '! 👕',
+          ready:'Kleidung ausziehen und falten! 👕',
           g:'Grün: Ausziehen und schön falten 👕', a:'Gelb: Weiter falten, die Zeit wird knapp', r:'Rot: Schnell fertig falten! 🧺',
-          done:'Alles gefaltet! ✨', title:k => 'Super, ' + k + '! Alles ordentlich gefaltet!' },
+          done:'Alles gefaltet! ✨', title:'Super! Alles ordentlich gefaltet!' },
 };
 const ORDER = ['hw', 'br', 'eat', 'fold'];
 const timers = {};
 ORDER.forEach(k => { const ms = MODES[k].min * 60000; timers[k] = { total:ms, remaining:ms, endAt:0, running:false, done:false }; });
 
-let mode = 'hw', theme = null, kid = 'Ahoora', tick = null, wake = null, resetArmed = null, lastZone = null;
-let stars = { Ahoora:0, Ila:0 };
+let mode = 'hw', theme = null, tick = null, wake = null, resetArmed = null, lastZone = null;
+// One shared star jar: the children collect stars together.
+let stars = 0;
 const $ = id => document.getElementById(id);
-try { stars = Object.assign(stars, JSON.parse(localStorage.getItem('ampelStars') || '{}')); } catch (_) {}
-try { const k = localStorage.getItem('ampelKid'); if (k === 'Ahoora' || k === 'Ila') kid = k; } catch (_) {}
+try {
+  const saved = localStorage.getItem('ampelTeamStars');
+  if (saved !== null) stars = parseInt(saved, 10) || 0;
+  else {
+    // Earlier versions counted stars per child: add them up into the shared jar once.
+    const old = JSON.parse(localStorage.getItem('ampelStars') || '{}');
+    stars = Object.values(old).reduce((sum, n) => sum + (parseInt(n, 10) || 0), 0);
+  }
+} catch (_) {}
 
 // ---------- faces ----------
 function faceSVG(k, extraClass) {
@@ -451,7 +458,7 @@ function zoneOf(t) {
   const f = t.remaining / t.total;
   return f > 0.5 ? 'g' : f > 0.25 ? 'a' : 'r';
 }
-function saveStars() { try { localStorage.setItem('ampelStars', JSON.stringify(stars)); } catch (_) {} }
+function saveStars() { try { localStorage.setItem('ampelTeamStars', String(stars)); } catch (_) {} }
 function popEl(el) { el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
 
 // ---------- render ----------
@@ -500,7 +507,7 @@ function render() {
 
   $('time').textContent = fmt(t.remaining);
   const pausedMid = !t.running && !t.done && t.remaining < t.total;
-  $('status').textContent = z === 'done' ? m.done : pausedMid ? 'Angehalten ⏸' : z === 'ready' ? m.ready(kid) : m[z];
+  $('status').textContent = z === 'done' ? m.done : pausedMid ? 'Angehalten ⏸' : z === 'ready' ? m.ready : m[z];
 
   const p = Math.min(1, Math.max(0, 1 - t.remaining / t.total));
   $('runner').style.left = 'calc(6px + ' + (p * 100) + '% - ' + (p * 58) + 'px)';
@@ -515,12 +522,7 @@ function render() {
     b.setAttribute('aria-selected', String(k === mode));
     b.disabled = anyRunning && k !== mode;
   });
-  ['kid0', 'kid1'].forEach(id => {
-    const b = $(id), name = b.dataset.kid;
-    b.setAttribute('aria-pressed', String(name === kid));
-    b.querySelector('.count').textContent = '⭐' + (stars[name] || 0);
-    b.disabled = anyRunning;
-  });
+  $('teamCount').textContent = stars;
   lastZone = z;
 }
 
@@ -570,7 +572,7 @@ function finish(which) {
   const t = timers[which];
   t.running = false; t.done = true; t.remaining = 0;
   clearInterval(tick); letSleep();
-  if (MODES[which].star) { stars[kid] = (stars[kid] || 0) + 1; saveStars(); }
+  if (MODES[which].star) { stars += 1; saveStars(); popEl($('team')); }
   celebrate(which);
 }
 
@@ -592,10 +594,10 @@ function celebrate(which) {
   const m = MODES[which];
   confetti();
   $('partyEmoji').textContent = which === 'hw' ? theme.goal + ' 🎉' : m.party;
-  $('partyTitle').textContent = m.title(kid);
+  $('partyTitle').textContent = m.title;
   $('partySub').textContent = m.star
-    ? 'Du bekommst einen Stern ⭐ Jetzt hast du ' + stars[kid] + '.'
-    : 'Zurück an die Aufgaben, ' + kid + '. Du schaffst das!';
+    ? 'Ein Stern für euch beide ⭐ Zusammen habt ihr jetzt ' + stars + '!'
+    : 'Zurück an die Aufgaben. Ihr schafft das!';
   const nb = $('partyNext');
   if (m.next) {
     const n = MODES[m.next];
@@ -614,13 +616,6 @@ $('partyClose').onclick = () => { $('party').hidden = true; };
 $('go').onclick = () => { timers[mode].running ? pause() : start(); };
 ORDER.forEach(k => { $('m-' + k).onclick = () => switchMode(k); });
 $('themeBtn').onclick = () => { randomTheme(); render(); };
-['kid0', 'kid1'].forEach(id => {
-  $(id).onclick = () => {
-    kid = $(id).dataset.kid;
-    try { localStorage.setItem('ampelKid', kid); } catch (_) {}
-    render();
-  };
-});
 // "Neu" needs two taps, so a child cannot restart the timer by accident.
 $('reset').onclick = () => {
   const b = $('reset');
