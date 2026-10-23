@@ -210,6 +210,35 @@ button:disabled{opacity:.4; cursor:default}
 .party-box .small{width:100%; display:block}
 .confetti{position:fixed; top:-50px; z-index:30; pointer-events:none; font-size:30px; animation:fall 2.8s linear forwards}
 
+/* ---- finale: the theme's character bursts onto the screen ---- */
+.finale[hidden]{display:none}
+.finale{
+  position:fixed; inset:0; z-index:25; display:grid; place-items:center; overflow:hidden; cursor:pointer;
+  background-color:var(--bg2);
+  background-image:radial-gradient(circle at 50% 45%, #fff 0%, var(--bg2) 45%, var(--accent) 100%);
+}
+.fin-rays{position:absolute; left:50%; top:45%; width:200vmax; height:200vmax; margin:-100vmax 0 0 -100vmax; opacity:.35; pointer-events:none;
+  background:repeating-conic-gradient(from 0deg, rgba(255,255,255,.9) 0deg 10deg, transparent 10deg 20deg);
+  animation:spin 6s linear infinite}
+.fin-hero{grid-area:1/1; font-size:min(58vw, 52vh); line-height:1; filter:drop-shadow(0 22px 30px rgba(0,0,0,.35)); will-change:transform}
+.fin-word{
+  grid-area:1/1; align-self:end; margin-bottom:10vh; text-align:center;
+  font-size:clamp(40px, 11.5vw, 130px); font-weight:800; line-height:1; letter-spacing:.02em; padding:0 12px; max-width:100vw; box-sizing:border-box;
+  color:#fff; -webkit-text-stroke:4px var(--ink); paint-order:stroke fill;
+  text-shadow:0 7px 0 rgba(0,0,0,.25);
+  animation:word .8s .7s both cubic-bezier(.3,1.7,.5,1);
+}
+.finale.roar .fin-hero{animation:roar 2.6s cubic-bezier(.2,.9,.2,1) both}
+.finale.roar{animation:shake .45s 1.05s 3}
+.finale.rise .fin-hero{animation:rise 2.6s ease-in both}
+.finale.dash .fin-hero{animation:dash 2.4s cubic-bezier(.5,0,.3,1) both}
+@keyframes roar{0%{transform:scale(.05) rotate(-12deg)}30%{transform:scale(1.1) rotate(5deg)}40%{transform:scale(.95) rotate(-4deg)}50%{transform:scale(1.3) rotate(3deg)}62%{transform:scale(1.15) rotate(-2deg)}100%{transform:scale(1.7) rotate(0)}}
+@keyframes rise{0%{transform:translateY(85vh) scale(.6)}55%{transform:translateY(0) scale(1.1)}70%{transform:translateY(-4vh) scale(1.15)}100%{transform:translateY(-130vh) scale(1.3)}}
+@keyframes dash{0%{transform:translateX(-130vw) scale(.8)}42%{transform:translateX(0) scale(1.1)}58%{transform:translateX(0) scale(1.15)}100%{transform:translateX(140vw) scale(.9)}}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-14px,7px)}40%{transform:translate(12px,-9px)}60%{transform:translate(-9px,-7px)}80%{transform:translate(9px,9px)}}
+@keyframes word{0%{transform:scale(0) rotate(-14deg); opacity:0}100%{transform:scale(1) rotate(-4deg); opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 @keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
 @keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
 @keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-2.5deg)}75%{transform:rotate(2.5deg)}}
@@ -239,6 +268,7 @@ button:disabled{opacity:.4; cursor:default}
   .goal{font-size:40px}
 }
 @media (prefers-reduced-motion:reduce){
+  .finale,.fin-hero,.fin-word,.fin-rays{animation:none !important}
   .eyes,.hat,.deco span,.vis.hurry,.light.party .lamp,.lamp.pop,.mood.pop,.mood.party,.stream,.wave,.bubble{animation:none}
   .runner,.piearc{transition:none}
 }
@@ -328,6 +358,12 @@ button:disabled{opacity:.4; cursor:default}
   </div>
 </main>
 
+<div class="finale" id="finale" hidden aria-hidden="true">
+  <div class="fin-rays"></div>
+  <div class="fin-hero" id="finHero"></div>
+  <div class="fin-word" id="finWord"></div>
+</div>
+
 <div class="party-card" id="party" hidden>
   <div class="party-box" role="dialog" aria-modal="true" aria-labelledby="partyTitle">
     <div class="party-emoji" id="partyEmoji">🎉</div>
@@ -352,6 +388,21 @@ const THEMES = [
   { name:'Zirkus',      vis:'ampel', bg1:'#fff1f2', bg2:'#fdb8c4', housing:'#9f1239', accent:'#e11d48', hat:'🎩', feet:['🎈','🎈'], runner:'🤹', flip:false, goal:'🎪', deco:['🎈','🐘','🦁','🍿','🎉','🤡'] },
   { name:'Zauberlabor', vis:'glass', bg1:'#f3e8ff', bg2:'#c4b5fd', housing:'#4c1d95', accent:'#7c3aed', hat:'🧙', feet:['✨','✨'], runner:'🧹', flip:false, goal:'🏰', deco:['🔮','⭐','🦉','🍄','✨','📜'] },
 ];
+
+// Each theme ends with its own dramatic moment.
+const FINALE = {
+  'Rennstrecke':    { hero:'🏎️', word:'BRRRUMM!',  anim:'dash', flip:true },
+  'Weltraum':       { hero:'🚀', word:'WUUUSCH!',  anim:'rise' },
+  'Dschungel':      { hero:'🦁', word:'ROOOAAAR!', anim:'roar' },
+  'Unterwasser':    { hero:'🦈', word:'SCHNAPP!',  anim:'roar' },
+  'Dinoland':       { hero:'🦖', word:'ROOOAAAR!', anim:'roar' },
+  'Piratenschiff':  { hero:'🐙', word:'KRAAAKE!',  anim:'roar' },
+  'Einhornland':    { hero:'🦄', word:'WIEHER! 🌈', anim:'dash', flip:true },
+  'Fußballstadion': { hero:'⚽', word:'TOOOOR!',   anim:'roar' },
+  'Zirkus':         { hero:'🐘', word:'TÖRÖÖÖ!',   anim:'roar' },
+  'Zauberlabor':    { hero:'🐉', word:'FAUCH!',    anim:'roar' },
+};
+THEMES.forEach(t => { t.fin = FINALE[t.name] || { hero:'🎉', word:'GESCHAFFT!', anim:'roar' }; });
 
 // ---------- the four separate timers ----------
 const MODES = {
@@ -590,7 +641,20 @@ function confetti() {
     setTimeout(() => d.remove(), 4000);
   }
 }
-function celebrate(which) {
+function finale(done) {
+  const f = theme.fin, el = $('finale');
+  $('finHero').innerHTML = '<span style="display:inline-block' + (f.flip ? ';transform:scaleX(-1)' : '') + '">' + f.hero + '</span>';
+  $('finWord').textContent = f.word;
+  el.className = 'finale ' + f.anim;
+  el.hidden = false;
+  let closed = false;
+  const close = () => { if (closed) return; closed = true; el.hidden = true; done(); };
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  setTimeout(close, reduce ? 1500 : 2900);
+  el.onclick = close;   // a tap skips straight to the celebration
+}
+function celebrate(which) { finale(() => showParty(which)); }
+function showParty(which) {
   const m = MODES[which];
   confetti();
   $('partyEmoji').textContent = which === 'hw' ? theme.goal + ' 🎉' : m.party;
