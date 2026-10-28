@@ -69,6 +69,11 @@ button:disabled{opacity:.4; cursor:default}
 .chip[aria-pressed="true"]{background:var(--housing); color:#fff}
 .chip .count{font-weight:600; opacity:.85}
 .team{background:var(--housing); color:#fff}
+.bday[hidden]{display:none}
+.bday{order:1; width:100%; max-width:560px; box-sizing:border-box; text-align:center;
+  background:linear-gradient(90deg, #f43f5e, #f59e0b, #22c55e, #3b82f6, #a855f7); color:#fff;
+  border-radius:16px; padding:8px 12px 5px; font-size:clamp(18px, 5vw, 26px); font-weight:800;
+  text-shadow:0 2px 0 rgba(0,0,0,.25); animation:bob 2.4s ease-in-out infinite}
 .team.pop{animation:pop .7s cubic-bezier(.3,1.7,.5,1)}
 
 .mode{
@@ -341,6 +346,7 @@ button:disabled{opacity:.4; cursor:default}
       <button type="button" class="chip" id="themeBtn" aria-label="Anderes Thema">🎲 <span id="themeName"></span></button>
     </div>
 
+    <div class="bday" id="bday" hidden></div>
     <div class="modes" id="modes" role="tablist" aria-label="Timer"></div>
 
     <p class="status" id="status" aria-live="polite"></p>
@@ -405,8 +411,30 @@ const FINALE = {
 THEMES.forEach(t => { t.fin = FINALE[t.name] || { hero:'🎉', word:'GESCHAFFT!', anim:'roar' }; });
 
 // ---------- seasonal themes: each switches on by itself during its time of year ----------
+<<<<<<< Updated upstream
 // While one is in season, the timer opens with it; the dice can still pick any theme.
+=======
+// In season it joins the normal random mix; out of season it never appears.
+// Birthdays: the birthday theme joins the mix from 3 days before to 3 days after,
+// and on the day itself a banner appears at the top.
+const BIRTHDAYS = [
+  { name:'Ahoora',  day:'04-03' },
+  { name:'Ila',     day:'04-24' },
+  { name:'Ayiriya', day:'04-28' },
+  { name:'Ara',     day:'06-25' },
+];
+function shiftDay(md, delta) {
+  const d = new Date(2001, parseInt(md.slice(0, 2), 10) - 1, parseInt(md.slice(3), 10) + delta);
+  return String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function birthdayTheme(name) {
+  return { name:'Geburtstag ' + name, vis:'pie', bg1:'#fff7e6', bg2:'#ffc8dd', housing:'#7c2d92', accent:'#f43f5e',
+    hat:'🎂', feet:['🎁','🎁'], runner:'🎈', flip:false, goal:'🎂', deco:['🎈','🎉','🎁','🧁','🍰','🎊'],
+    fin:{ hero:'🎂', word:'ALLES GUTE, ' + name.toUpperCase() + '!', anim:'roar' } };
+}
+>>>>>>> Stashed changes
 const SEASONAL = [
+  ...BIRTHDAYS.map(b => ({ from:shiftDay(b.day, -3), to:shiftDay(b.day, 3), theme:birthdayTheme(b.name) })),
   { from:'10-15', to:'11-02', theme:{ name:'Halloween', vis:'glass', bg1:'#ffe7cc', bg2:'#f7a35c', housing:'#2d1b3d', accent:'#ea580c',
       hat:'🎃', feet:['🦇','🦇'], runner:'👻', flip:false, goal:'🍬', deco:['🦇','🕸️','🕷️','🍭','🌕','🎃'],
       fin:{ hero:'👻', word:'BUUUUH!', anim:'roar' } } },
@@ -723,7 +751,17 @@ $('reset').onclick = () => {
   resetTimer(mode); lastZone = null; render();
 };
 
+<<<<<<< Updated upstream
 if (seasonNow.length) applyTheme(seasonNow[0]); else randomTheme();
+=======
+randomTheme();
+(function () {
+  const now = new Date();
+  const today = String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+  const kids = BIRTHDAYS.filter(b => b.day === today).map(b => b.name);
+  if (kids.length) { $('bday').textContent = '🎂 Heute hat ' + kids.join(' und ') + ' Geburtstag! 🎉'; $('bday').hidden = false; }
+})();
+>>>>>>> Stashed changes
 render();
 </script>
 
