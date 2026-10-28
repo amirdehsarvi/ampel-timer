@@ -411,9 +411,6 @@ const FINALE = {
 THEMES.forEach(t => { t.fin = FINALE[t.name] || { hero:'🎉', word:'GESCHAFFT!', anim:'roar' }; });
 
 // ---------- seasonal themes: each switches on by itself during its time of year ----------
-<<<<<<< Updated upstream
-// While one is in season, the timer opens with it; the dice can still pick any theme.
-=======
 // In season it joins the normal random mix; out of season it never appears.
 // Birthdays: the birthday theme joins the mix from 3 days before to 3 days after,
 // and on the day itself a banner appears at the top.
@@ -432,7 +429,6 @@ function birthdayTheme(name) {
     hat:'🎂', feet:['🎁','🎁'], runner:'🎈', flip:false, goal:'🎂', deco:['🎈','🎉','🎁','🧁','🍰','🎊'],
     fin:{ hero:'🎂', word:'ALLES GUTE, ' + name.toUpperCase() + '!', anim:'roar' } };
 }
->>>>>>> Stashed changes
 const SEASONAL = [
   ...BIRTHDAYS.map(b => ({ from:shiftDay(b.day, -3), to:shiftDay(b.day, 3), theme:birthdayTheme(b.name) })),
   { from:'10-15', to:'11-02', theme:{ name:'Halloween', vis:'glass', bg1:'#ffe7cc', bg2:'#f7a35c', housing:'#2d1b3d', accent:'#ea580c',
@@ -751,9 +747,6 @@ $('reset').onclick = () => {
   resetTimer(mode); lastZone = null; render();
 };
 
-<<<<<<< Updated upstream
-if (seasonNow.length) applyTheme(seasonNow[0]); else randomTheme();
-=======
 randomTheme();
 (function () {
   const now = new Date();
@@ -761,7 +754,6 @@ randomTheme();
   const kids = BIRTHDAYS.filter(b => b.day === today).map(b => b.name);
   if (kids.length) { $('bday').textContent = '🎂 Heute hat ' + kids.join(' und ') + ' Geburtstag! 🎉'; $('bday').hidden = false; }
 })();
->>>>>>> Stashed changes
 render();
 </script>
 
