@@ -432,8 +432,14 @@ function birthdayTheme(name) {
 const SEASONAL = [
   ...BIRTHDAYS.map(b => ({ from:shiftDay(b.day, -3), to:shiftDay(b.day, 3), theme:birthdayTheme(b.name) })),
   { from:'10-15', to:'11-02', theme:{ name:'Halloween', vis:'glass', bg1:'#ffe7cc', bg2:'#f7a35c', housing:'#2d1b3d', accent:'#ea580c',
-      hat:'🎃', feet:['🦇','🦇'], runner:'👻', flip:false, goal:'🍬', deco:['🦇','🕸️','🕷️','🍭','🌕','🎃'],
-      fin:{ hero:'👻', word:'BUUUUH!', anim:'roar' } } },
+      hat:'🎃', feet:['🐈‍⬛','🦇'], runner:'🧙‍♀️', flip:false, goal:'🍬', deco:['🧛','🦇','🧙‍♀️','🕸️','🐈‍⬛','👻','🕷️','🌕'],
+      fin:{ anim:'roar', variants:[
+        { hero:'👻', word:'BUUUUH!' },
+        { hero:'🧛', word:'MUAHAHA!' },
+        { hero:'🧙‍♀️', word:'HEX HEX!' },
+        { hero:'🐈‍⬛', word:'MIAUUU!' },
+        { hero:'🎃', word:'SÜSSES ODER SAURES!' },
+      ] } } },
   { from:'11-05', to:'11-12', theme:{ name:'Sankt Martin', vis:'pie', bg1:'#fff4d6', bg2:'#fbd38d', housing:'#3b2a5c', accent:'#d97706',
       hat:'🏮', feet:['🐴','🐴'], runner:'🐴', flip:true, goal:'🏮', deco:['🏮','⭐','🌙','🥨','🧣','✨'],
       fin:{ hero:'🏮', word:'LICHTERGLANZ!', anim:'rise' } } },
@@ -697,8 +703,10 @@ function confetti() {
 }
 function finale(done) {
   const f = theme.fin, el = $('finale');
-  $('finHero').innerHTML = '<span style="display:inline-block' + (f.flip ? ';transform:scaleX(-1)' : '') + '">' + f.hero + '</span>';
-  $('finWord').textContent = f.word;
+  // some themes have several finales and pick one at random each time
+  const pick = f.variants ? f.variants[Math.floor(Math.random() * f.variants.length)] : f;
+  $('finHero').innerHTML = '<span style="display:inline-block' + (pick.flip ? ';transform:scaleX(-1)' : '') + '">' + pick.hero + '</span>';
+  $('finWord').textContent = pick.word;
   el.className = 'finale ' + f.anim;
   el.hidden = false;
   let closed = false;
