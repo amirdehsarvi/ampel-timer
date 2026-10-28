@@ -343,6 +343,7 @@ button:disabled{opacity:.4; cursor:default}
   <div class="panel">
     <div class="top">
       <div class="chip team" id="team" aria-live="polite">⭐ Unsere Sterne: <span id="teamCount">0</span></div>
+      <button type="button" class="chip" id="soundBtn" aria-label="Ton an oder aus">🔊</button>
       <button type="button" class="chip" id="themeBtn" aria-label="Anderes Thema">🎲 <span id="themeName"></span></button>
     </div>
 
@@ -434,11 +435,11 @@ const SEASONAL = [
   { from:'10-15', to:'11-02', theme:{ name:'Halloween', vis:'glass', bg1:'#ffe7cc', bg2:'#f7a35c', housing:'#2d1b3d', accent:'#ea580c',
       hat:'🎃', feet:['🐈‍⬛','🦇'], runner:'🧙‍♀️', flip:false, goal:'🍬', deco:['🧛','🦇','🧙‍♀️','🕸️','🐈‍⬛','👻','🕷️','🌕'],
       fin:{ anim:'roar', variants:[
-        { hero:'👻', word:'BUUUUH!' },
-        { hero:'🧛', word:'MUAHAHA!' },
-        { hero:'🧙‍♀️', word:'HEX HEX!' },
-        { hero:'🐈‍⬛', word:'MIAUUU!' },
-        { hero:'🎃', word:'SÜSSES ODER SAURES!' },
+        { hero:'👻', word:'BUUUUH!', sfx:'ghost' },
+        { hero:'🧛', word:'MUAHAHA!', sfx:'muahaha' },
+        { hero:'🧙‍♀️', word:'HEX HEX!', sfx:'cackle' },
+        { hero:'🐈‍⬛', word:'MIAUUU!', sfx:'meow' },
+        { hero:'🎃', word:'SÜSSES ODER SAURES!', sfx:'spooky' },
       ] } } },
   { from:'11-05', to:'11-12', theme:{ name:'Sankt Martin', vis:'pie', bg1:'#fff4d6', bg2:'#fbd38d', housing:'#3b2a5c', accent:'#d97706',
       hat:'🏮', feet:['🐴','🐴'], runner:'🐴', flip:true, goal:'🏮', deco:['🏮','⭐','🌙','🥨','🧣','✨'],
@@ -580,6 +581,7 @@ function render() {
   const t = timers[mode], m = MODES[mode];
   const z = zoneOf(t);
   const changed = lastZone !== null && z !== lastZone;
+  if (changed && t.running) { if (z === 'a') playSfx('ding'); else if (z === 'r') playSfx('hurry'); }
   const f = z === 'done' ? 0 : Math.min(1, Math.max(0, t.remaining / t.total));
   document.documentElement.style.setProperty('--zone', ZCOL[z]);
   document.documentElement.style.setProperty('--glow', GLOW[z]);
@@ -642,6 +644,7 @@ function tickAll() {
   const t = timers[mode];
   if (!t.running) return;
   t.remaining = Math.max(0, t.endAt - Date.now());
+  if (t.amb && t.amb.length && t.remaining > 0 && t.remaining <= t.amb[0]) { t.amb.shift(); playSfx(themeSounds(theme)[1]); }
   if (t.remaining <= 0) finish(mode);
   render();
 }
@@ -658,6 +661,9 @@ function start() {
   if (t.done) { t.done = false; t.remaining = t.total; }
   t.endAt = Date.now() + t.remaining;
   t.running = true;
+  audioUnlock();
+  // two soft themed sounds at random moments while the timer runs
+  t.amb = [0.55 + Math.random() * 0.25, 0.3 + Math.random() * 0.15].map(x => x * t.total).filter(ms => ms < t.remaining);
   keepAwake();
   clearInterval(tick); tick = setInterval(tickAll, 250);
   render();
@@ -687,6 +693,123 @@ function finish(which) {
   celebrate(which);
 }
 
+// ---------- sounds: made by the page itself, no audio files ----------
+let actx = null, master = null, noiseBuf = null;
+let soundOn = true;
+try { soundOn = localStorage.getItem('ampelSound') !== 'off'; } catch (_) {}
+function audioUnlock() {
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = 'playback';   // play even with the iPhone's silent switch on
+    if (!actx) {
+      actx = new (window.AudioContext || window.webkitAudioContext)();
+      master = actx.createGain(); master.gain.value = 0.9; master.connect(actx.destination);
+    }
+    if (actx.state === 'suspended') actx.resume();
+    const b = actx.createBuffer(1, 1, 22050), src = actx.createBufferSource();
+    src.buffer = b; src.connect(master); src.start(0);
+  } catch (_) { actx = null; }
+}
+function envelope(g, t, a, d, v) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(v, t + a);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+}
+function osc(type, f0, f1, t, dur, vol, vib) {
+  const o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t);
+  if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  if (vib) {
+    const l = actx.createOscillator(), lg = actx.createGain();
+    l.frequency.value = vib[0]; lg.gain.value = vib[1];
+    l.connect(lg).connect(o.frequency); l.start(t); l.stop(t + dur + 0.1);
+  }
+  envelope(g, t, Math.min(0.05, dur / 4), dur, vol);
+  o.connect(g).connect(master); o.start(t); o.stop(t + dur + 0.15);
+}
+function noise(t, dur, vol, f0, f1, q) {
+  if (!noiseBuf) {
+    noiseBuf = actx.createBuffer(1, actx.sampleRate * 2, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+  src.buffer = noiseBuf; src.loop = true;
+  f.type = 'bandpass'; f.Q.value = q || 1;
+  f.frequency.setValueAtTime(f0, t);
+  if (f1 && f1 !== f0) f.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  envelope(g, t, Math.min(0.06, dur / 4), dur, vol);
+  src.connect(f).connect(g).connect(master); src.start(t); src.stop(t + dur + 0.15);
+}
+const hz = n => 440 * Math.pow(2, (n - 69) / 12);
+function melody(type, notes, step, t, vol, len) {
+  notes.forEach((n, i) => { if (n) osc(type, hz(n), hz(n), t + i * step, len || step * 0.9, vol); });
+}
+const SFX = {
+  // finales
+  roar:      t => { noise(t, 1.8, 0.9, 400, 120, 0.8); osc('sawtooth', 120, 60, t, 1.8, 0.35, [22, 18]); },
+  kraken:    t => { noise(t, 2.0, 0.8, 220, 80, 0.7); osc('sawtooth', 80, 45, t, 2.0, 0.35, [9, 12]); },
+  dragon:    t => { noise(t, 1.6, 0.9, 2500, 300, 0.6); osc('sawtooth', 150, 70, t + 0.1, 1.4, 0.3, [25, 20]); },
+  chomp:     t => { [0, 0.35].forEach(d => { noise(t + d, 0.25, 0.9, 900, 200, 1); osc('square', 160, 50, t + d, 0.2, 0.4); }); },
+  engine:    t => { osc('sawtooth', 55, 220, t, 1.6, 0.35, [28, 25]); noise(t, 1.6, 0.25, 300, 900, 0.8); },
+  whoosh:    t => { noise(t, 2.0, 0.9, 150, 4000, 0.7); osc('sine', 80, 40, t, 2.0, 0.3); },
+  goal:      t => { osc('sine', 2200, 2200, t, 0.25, 0.25, [30, 120]); osc('sine', 2200, 2200, t + 0.35, 0.6, 0.25, [30, 120]); noise(t + 1.0, 1.8, 0.6, 700, 1100, 0.4); },
+  trumpet:   t => { osc('sawtooth', 330, 660, t, 0.9, 0.35, [7, 25]); osc('sawtooth', 660, 500, t + 0.9, 0.6, 0.3, [7, 25]); },
+  magic:     t => melody('sine', [84, 88, 91, 96, 100, 103], 0.09, t, 0.25, 0.5),
+  bells:     t => { [76, 79, 84, 79, 76].forEach((n, i) => { osc('sine', hz(n), hz(n), t + i * 0.28, 1.2, 0.25); osc('sine', hz(n) * 2.76, hz(n) * 2.76, t + i * 0.28, 0.6, 0.06); }); },
+  boom:      t => { noise(t, 1.2, 0.9, 120, 40, 0.5); osc('sine', 90, 30, t, 1.0, 0.5); for (let i = 0; i < 10; i++) noise(t + 0.5 + Math.random() * 1.2, 0.05, 0.4, 3000, 3000, 2); },
+  partyhorn: t => osc('sawtooth', 420, 520, t, 0.9, 0.3, [12, 15]),
+  boing:     t => { [0, 0.3, 0.6].forEach(d => osc('sine', 180, 700, t + d, 0.25, 0.4)); },
+  fanfare:   t => melody('square', [67, 72, 76, 79, 0, 76, 79], 0.14, t, 0.18),
+  ghost:     t => { osc('sine', 300, 520, t, 0.9, 0.35, [6, 25]); osc('sine', 520, 260, t + 0.9, 1.0, 0.35, [6, 25]); },
+  muahaha:   t => { [0, 0.32, 0.64, 0.96].forEach((d, i) => osc('sawtooth', 160 - i * 12, 120 - i * 12, t + d, 0.26, 0.3, [14, 12])); },
+  cackle:    t => { for (let i = 0; i < 6; i++) osc('square', 900 - i * 60, 700 - i * 60, t + i * 0.16, 0.12, 0.2); },
+  meow:      t => { osc('triangle', 520, 900, t, 0.3, 0.35); osc('triangle', 900, 420, t + 0.3, 0.55, 0.35); },
+  spooky:    t => melody('triangle', [57, 60, 63, 66, 69, 66], 0.18, t, 0.25, 0.3),
+  // soft sounds for the middle of a timer
+  birds:     t => { for (let i = 0; i < 3; i++) osc('sine', 2800, 3600, t + i * 0.22, 0.12, 0.12); },
+  bubbles:   t => { for (let i = 0; i < 5; i++) osc('sine', 300 + Math.random() * 400, 900, t + i * 0.15, 0.1, 0.15); },
+  beeps:     t => melody('square', [84, 79, 88, 0, 91], 0.12, t, 0.08),
+  stomp:     t => { [0, 0.55].forEach(d => { osc('sine', 70, 35, t + d, 0.35, 0.5); noise(t + d, 0.2, 0.3, 200, 80, 0.7); }); },
+  shipbell:  t => { [0, 0.45].forEach(d => { osc('sine', 880, 880, t + d, 1.0, 0.18); osc('sine', 2430, 2430, t + d, 0.5, 0.05); }); },
+  crowd:     t => noise(t, 1.6, 0.35, 800, 1000, 0.4),
+  drumroll:  t => { for (let i = 0; i < 14; i++) noise(t + i * 0.06, 0.05, 0.3, 1500, 1500, 1); noise(t + 0.9, 0.4, 0.5, 5000, 5000, 0.5); },
+  crackle:   t => { for (let i = 0; i < 12; i++) noise(t + Math.random() * 1.2, 0.04, 0.3, 4000, 4000, 2); },
+  owl:       t => { osc('sine', 420, 400, t, 0.35, 0.25); osc('sine', 420, 380, t + 0.5, 0.6, 0.25); },
+  // traffic-light changes
+  ding:      t => { osc('sine', 880, 880, t, 0.5, 0.25); osc('sine', 660, 660, t + 0.25, 0.7, 0.25); },
+  hurry:     t => melody('sine', [76, 79, 83], 0.12, t, 0.25),
+};
+// [finale sound, sound for the middle of the timer] per theme
+const SOUNDS = {
+  'Rennstrecke':['engine','engine'], 'Weltraum':['whoosh','beeps'], 'Dschungel':['roar','birds'],
+  'Unterwasser':['chomp','bubbles'], 'Dinoland':['roar','stomp'], 'Piratenschiff':['kraken','shipbell'],
+  'Einhornland':['magic','magic'], 'Fußballstadion':['goal','crowd'], 'Zirkus':['trumpet','drumroll'],
+  'Zauberlabor':['dragon','magic'], 'Halloween':['spooky','owl'], 'Sankt Martin':['magic','bells'],
+  'Weihnachten':['bells','bells'], 'Silvester':['boom','crackle'], 'Fasching':['partyhorn','partyhorn'],
+  'Ostern':['boing','birds'],
+};
+function themeSounds(t) {
+  if (t.name.indexOf('Geburtstag') === 0) return ['fanfare', 'partyhorn'];
+  return SOUNDS[t.name] || ['fanfare', 'magic'];
+}
+function playSfx(name) {
+  if (!soundOn || !actx || !name || !SFX[name]) return;
+  try { if (actx.state === 'suspended') actx.resume(); SFX[name](actx.currentTime + 0.05); } catch (_) {}
+}
+function speak(text) {
+  if (!soundOn || !('speechSynthesis' in window)) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'de-DE'; u.rate = 0.95; u.pitch = 1.1;
+    const vs = speechSynthesis.getVoices();
+    const v = vs.find(x => /anna/i.test(x.name) && /^de/i.test(x.lang)) || vs.find(x => /^de/i.test(x.lang));
+    if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  } catch (_) {}
+}
+function updateSoundBtn() { $('soundBtn').textContent = soundOn ? '🔊' : '🔇'; }
+
 // ---------- celebration ----------
 function confetti() {
   if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -709,6 +832,7 @@ function finale(done) {
   $('finWord').textContent = pick.word;
   el.className = 'finale ' + f.anim;
   el.hidden = false;
+  playSfx(pick.sfx || themeSounds(theme)[0]);
   let closed = false;
   const close = () => { if (closed) return; closed = true; el.hidden = true; done(); };
   const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -735,6 +859,7 @@ function showParty(which) {
     nb.onclick = null;
   }
   $('party').hidden = false;
+  speak(m.title + (m.star ? ' Ein Stern für euch!' : ''));
 }
 $('partyClose').onclick = () => { $('party').hidden = true; };
 
@@ -755,6 +880,13 @@ $('reset').onclick = () => {
   resetTimer(mode); lastZone = null; render();
 };
 
+$('soundBtn').onclick = () => {
+  soundOn = !soundOn;
+  try { localStorage.setItem('ampelSound', soundOn ? 'on' : 'off'); } catch (_) {}
+  updateSoundBtn();
+  if (soundOn) { audioUnlock(); playSfx('ding'); } else if ('speechSynthesis' in window) speechSynthesis.cancel();
+};
+updateSoundBtn();
 randomTheme();
 (function () {
   const now = new Date();
