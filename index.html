@@ -404,6 +404,36 @@ const FINALE = {
 };
 THEMES.forEach(t => { t.fin = FINALE[t.name] || { hero:'🎉', word:'GESCHAFFT!', anim:'roar' }; });
 
+// ---------- seasonal themes: each switches on by itself during its time of year ----------
+// While one is in season, the timer opens with it; the dice can still pick any theme.
+const SEASONAL = [
+  { from:'10-15', to:'11-02', theme:{ name:'Halloween', vis:'glass', bg1:'#ffe7cc', bg2:'#f7a35c', housing:'#2d1b3d', accent:'#ea580c',
+      hat:'🎃', feet:['🦇','🦇'], runner:'👻', flip:false, goal:'🍬', deco:['🦇','🕸️','🕷️','🍭','🌕','🎃'],
+      fin:{ hero:'👻', word:'BUUUUH!', anim:'roar' } } },
+  { from:'11-05', to:'11-12', theme:{ name:'Sankt Martin', vis:'pie', bg1:'#fff4d6', bg2:'#fbd38d', housing:'#3b2a5c', accent:'#d97706',
+      hat:'🏮', feet:['🐴','🐴'], runner:'🐴', flip:true, goal:'🏮', deco:['🏮','⭐','🌙','🥨','🧣','✨'],
+      fin:{ hero:'🏮', word:'LICHTERGLANZ!', anim:'rise' } } },
+  { from:'12-01', to:'12-26', theme:{ name:'Weihnachten', vis:'sand', bg1:'#eef6ff', bg2:'#bfdcff', housing:'#14532d', accent:'#dc2626',
+      hat:'🎅', feet:['🎁','🎁'], runner:'🛷', flip:false, goal:'🎄', deco:['❄️','⛄','🎄','⭐','🍪','🎁'],
+      fin:{ hero:'🎅', word:'HO HO HO!', anim:'roar' } } },
+  { from:'12-29', to:'01-02', theme:{ name:'Silvester', vis:'pie', bg1:'#e9e7ff', bg2:'#a5a3f5', housing:'#1e1b4b', accent:'#c026d3',
+      hat:'🎩', feet:['🎉','🎉'], runner:'🚀', flip:false, goal:'🎆', deco:['🎆','🎇','✨','🥳','🍀','🐷'],
+      fin:{ hero:'🎆', word:'BOOOOM!', anim:'rise' } } },
+  { from:'02-01', to:'02-18', theme:{ name:'Fasching', vis:'ampel', bg1:'#fff0f6', bg2:'#ffc2dd', housing:'#7e22ce', accent:'#f59e0b',
+      hat:'🎭', feet:['🎊','🎊'], runner:'🤡', flip:false, goal:'🎉', deco:['🎊','🎈','🍩','🎭','🦸','👑'],
+      fin:{ hero:'🥳', word:'HELAU!', anim:'roar' } } },
+  { from:'03-20', to:'04-20', theme:{ name:'Ostern', vis:'glass', bg1:'#f0fdf4', bg2:'#c6f1d6', housing:'#166534', accent:'#ec4899',
+      hat:'🐰', feet:['🥚','🥚'], runner:'🐇', flip:true, goal:'🧺', deco:['🥚','🌷','🐣','🌼','🍫','🦋'],
+      fin:{ hero:'🐰', word:'HOPP HOPP!', anim:'dash', flip:true } } },
+];
+function inSeason(from, to, d) {
+  const md = (d.getMonth() + 1) * 100 + d.getDate();
+  const f = parseInt(from.replace('-', ''), 10), t = parseInt(to.replace('-', ''), 10);
+  return f <= t ? (md >= f && md <= t) : (md >= f || md <= t);
+}
+const seasonNow = SEASONAL.filter(x => inSeason(x.from, x.to, new Date())).map(x => x.theme);
+seasonNow.forEach(t => THEMES.push(t));
+
 // ---------- the four separate timers ----------
 const MODES = {
   hw:   { min:20, em:'📚', lbl:'Aufgaben', star:true,  next:'br', party:'🎉',
@@ -693,7 +723,7 @@ $('reset').onclick = () => {
   resetTimer(mode); lastZone = null; render();
 };
 
-randomTheme();
+if (seasonNow.length) applyTheme(seasonNow[0]); else randomTheme();
 render();
 </script>
 
