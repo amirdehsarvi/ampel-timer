@@ -694,20 +694,56 @@ function finish(which) {
 }
 
 // ---------- sounds: made by the page itself, no audio files ----------
-let actx = null, master = null, noiseBuf = null;
+let actx = null, master = null, noiseBuf = null;   // only used while a sound is being prepared
 let soundOn = true;
 try { soundOn = localStorage.getItem('ampelSound') !== 'off'; } catch (_) {}
+
+// iPhone/iPad play sounds most reliably through one audio element that a tap has unlocked.
+function wavBlob(samples, sr) {
+  const n = samples.length, dv = new DataView(new ArrayBuffer(44 + n * 2));
+  const w = (o, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(o + i, str.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+  w(36, 'data'); dv.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, samples[i])); dv.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+  return new Blob([dv], { type:'audio/wav' });
+}
+const SILENT_URL = URL.createObjectURL(wavBlob(new Float32Array(2205), 22050));
+const player = new Audio();
+player.preload = 'auto';
+player.setAttribute('playsinline', '');
+let unlocked = false;
+const sfxUrls = {};
+function renderSfx(name) {
+  if (sfxUrls[name]) return sfxUrls[name];
+  const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+  if (!OAC || !SFX[name]) return Promise.resolve(null);
+  const sr = 22050, oc = new OAC(1, Math.round(sr * 3.6), sr);
+  const keep = [actx, master, noiseBuf];
+  actx = oc; master = oc.createGain(); master.gain.value = 0.9; master.connect(oc.destination); noiseBuf = null;
+  try { SFX[name](0.02); } catch (e) { actx = keep[0]; master = keep[1]; noiseBuf = keep[2]; return Promise.resolve(null); }
+  actx = keep[0]; master = keep[1]; noiseBuf = keep[2];
+  sfxUrls[name] = new Promise(res => {
+    const done = buf => res(URL.createObjectURL(wavBlob(buf.getChannelData(0), sr)));
+    oc.oncomplete = e => done(e.renderedBuffer);
+    const r = oc.startRendering();
+    if (r && r.then) r.then(done).catch(() => res(null));
+  });
+  return sfxUrls[name];
+}
+function prepareThemeSounds() {
+  themeSounds(theme).concat(['ding', 'hurry']).forEach(renderSfx);
+  const f = theme.fin; if (f && f.variants) f.variants.forEach(v => { if (v.sfx) renderSfx(v.sfx); });
+}
 function audioUnlock() {
-  try {
-    if (navigator.audioSession) navigator.audioSession.type = 'playback';   // play even with the iPhone's silent switch on
-    if (!actx) {
-      actx = new (window.AudioContext || window.webkitAudioContext)();
-      master = actx.createGain(); master.gain.value = 0.9; master.connect(actx.destination);
-    }
-    if (actx.state === 'suspended') actx.resume();
-    const b = actx.createBuffer(1, 1, 22050), src = actx.createBufferSource();
-    src.buffer = b; src.connect(master); src.start(0);
-  } catch (_) { actx = null; }
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
+  if (!unlocked) {
+    unlocked = true;
+    try { player.src = SILENT_URL; const pr = player.play(); if (pr && pr.catch) pr.catch(() => { unlocked = false; }); } catch (_) { unlocked = false; }
+    try { if ('speechSynthesis' in window) { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } } catch (_) {}
+  }
+  prepareThemeSounds();
 }
 function envelope(g, t, a, d, v) {
   g.gain.setValueAtTime(0.0001, t);
@@ -793,8 +829,11 @@ function themeSounds(t) {
   return SOUNDS[t.name] || ['fanfare', 'magic'];
 }
 function playSfx(name) {
-  if (!soundOn || !actx || !name || !SFX[name]) return;
-  try { if (actx.state === 'suspended') actx.resume(); SFX[name](actx.currentTime + 0.05); } catch (_) {}
+  if (!soundOn || !name || !SFX[name]) return;
+  renderSfx(name).then(url => {
+    if (!url || !soundOn) return;
+    try { player.src = url; const pr = player.play(); if (pr && pr.catch) pr.catch(() => {}); } catch (_) {}
+  });
 }
 function speak(text) {
   if (!soundOn || !('speechSynthesis' in window)) return;
