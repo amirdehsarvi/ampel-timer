@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="1×1">
+<link rel="apple-touch-icon" href="einmaleins-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<title>Einmaleins-Abenteuer</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+<style>
+/* Layout: one column, phone and iPad. Home (start, row picker, mastery grid, streak) -> Play (timer bar,
+   question, big number pad) -> Result. Single bright look on purpose; green/amber/red mean the same as the timers. */
+:root{
+  --bg1:#eaf3ff; --bg2:#cfe2ff;
+  --ink:#1f2340; --muted:#5d6280;
+  --card:#ffffff; --soft:#eef1f8;
+  --accent:#5b4fd8; --accent2:#ff7a2f;
+  --good:#16a34a; --bad:#dc2626;
+  --zone:#22c55e;
+  --font:'Baloo 2', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{
+  margin:0; background:linear-gradient(170deg, var(--bg1), var(--bg2)); background-color:var(--bg1);
+  color:var(--ink); font-family:var(--font);
+  -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent;
+}
+.app{
+  min-height:100%; box-sizing:border-box;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:12px;
+  display:flex; flex-direction:column; align-items:center;
+}
+.screen{width:100%; max-width:620px; display:flex; flex-direction:column; gap:12px}
+.screen[hidden]{display:none}
+h1{margin:6px 0 0; font-size:clamp(32px, 8.5vw, 48px); line-height:1; text-align:center; text-wrap:balance}
+h2{margin:0 0 8px; font-size:20px}
+.sub{margin:0; text-align:center; color:var(--muted); font-size:18px}
+.card{background:var(--card); border-radius:22px; padding:14px 16px; box-shadow:0 4px 0 rgba(31,35,64,.08)}
+.stats{display:flex; gap:8px}
+.stat{flex:1; text-align:center}
+.stat b{display:block; font-size:28px; line-height:1.1}
+.stat span{color:var(--muted); font-size:15px}
+button{font:inherit; color:inherit; border:0; cursor:pointer; touch-action:manipulation}
+button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
+.big{
+  width:100%; background:var(--accent); color:#fff; border-radius:22px;
+  font-size:clamp(24px, 6.5vw, 32px); font-weight:800; padding:16px 0 12px;
+  box-shadow:0 6px 0 rgba(0,0,0,.2);
+}
+.big:active{transform:translateY(3px); box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.big small{display:block; font-size:16px; font-weight:600; opacity:.9}
+.chip{background:var(--card); border-radius:999px; padding:6px 14px 4px; font-weight:700; font-size:17px; box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.reihen{display:grid; grid-template-columns:repeat(5, 1fr); gap:8px}
+.reihe{background:var(--soft); border-radius:16px; padding:8px 0 5px; font-size:24px; font-weight:800; line-height:1.05}
+.reihe small{display:block; font-size:13px; font-weight:700; color:var(--muted)}
+.reihe:active{transform:translateY(2px)}
+
+/* mastery grid: rows 1-10, columns x1..x12 */
+.grid{display:grid; grid-template-columns:26px repeat(12, 1fr); gap:3px; font-size:12px; align-items:center}
+.grid .h{text-align:center; color:var(--muted); font-weight:700}
+.cell{aspect-ratio:1; border-radius:5px; background:#e3e6ee}
+.cell.b0{background:#fca5a5}
+.cell.b1{background:#fdba74}
+.cell.b2{background:#fde047}
+.cell.b3{background:#bef264}
+.cell.b4{background:#4ade80}
+.cell.b5{background:#16a34a}
+.legend{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; font-size:13px; color:var(--muted); margin-top:8px}
+.legend i{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:4px; vertical-align:-1px}
+.hist{margin:0; padding:0; list-style:none; font-size:16px}
+.hist li{display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px dashed #dde2ee}
+.hist li:last-child{border-bottom:0}
+.hist .when{color:var(--muted)}
+
+/* play */
+.bar-top{display:flex; justify-content:space-between; align-items:center; gap:8px}
+.clock{font-size:24px; font-weight:800; font-variant-numeric:tabular-nums}
+.timebar{height:14px; background:rgba(255,255,255,.75); border-radius:99px; overflow:hidden}
+.timebar > div{height:100%; width:100%; background:var(--zone); transition:width .5s linear, background-color .4s}
+.hud{display:flex; justify-content:space-around; font-size:20px; font-weight:800}
+.hud .hot{color:var(--accent2)}
+.qcard{text-align:center; padding:12px 16px 14px}
+.q{font-size:clamp(58px, 17vw, 110px); font-weight:800; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:.02em}
+.ans{
+  display:inline-block; margin-top:6px; min-width:2.6ch; min-height:1.1em; text-align:center;
+  font-size:clamp(50px, 14vw, 92px); font-weight:800; line-height:1.1; font-variant-numeric:tabular-nums;
+  border-bottom:6px solid var(--accent); padding:0 14px;
+}
+.ans.ok{color:var(--good); border-color:var(--good); animation:pop .45s cubic-bezier(.3,1.7,.5,1)}
+.ans.no{color:var(--bad); border-color:var(--bad); animation:shake .4s}
+.fb{min-height:1.5em; text-align:center; font-size:clamp(20px, 5.2vw, 26px); font-weight:800}
+.fb.ok{color:var(--good)} .fb.no{color:var(--bad)}
+.pad{display:grid; grid-template-columns:repeat(3, 1fr); gap:9px}
+.key{background:var(--card); border-radius:18px; font-size:clamp(30px, 8.5vw, 42px); font-weight:800; padding:10px 0 6px; box-shadow:0 4px 0 rgba(0,0,0,.1)}
+.key:active{transform:translateY(2px); box-shadow:0 2px 0 rgba(0,0,0,.1)}
+.key.go{background:var(--good); color:#fff}
+.key.del{background:#e3e6ee}
+.paused{text-align:center; font-size:28px; font-weight:800; padding:40px 0}
+
+/* result */
+.trophy{font-size:84px; text-align:center; line-height:1}
+.again{display:flex; flex-wrap:wrap; gap:6px; justify-content:center}
+.again span{background:#fee2e2; color:#7f1d1d; border-radius:12px; padding:4px 10px 2px; font-size:20px; font-weight:800; font-variant-numeric:tabular-nums}
+.confetti{position:fixed; top:-50px; z-index:30; pointer-events:none; font-size:30px; animation:fall 2.8s linear forwards}
+
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+@media (min-width:700px){
+  .key{padding:16px 0 10px}
+  .reihe{font-size:28px}
+}
+@media (orientation:landscape) and (max-height:520px){
+  .play-wrap{display:grid; grid-template-columns:1fr 1fr; gap:12px; align-items:start}
+  .q{font-size:clamp(44px, 10vh, 80px)}
+  .ans{font-size:clamp(40px, 9vh, 70px)}
+  .key{padding:6px 0 3px; font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){
+  .ans.ok,.ans.no,.confetti{animation:none}
+  .timebar > div{transition:none}
+}
+</style>
+
+<main class="app">
+
+  <!-- HOME -->
+  <section class="screen" id="home">
+    <h1>Einmaleins-Abenteuer</h1>
+    <p class="sub">Jeden Tag 10 Minuten. Du schaffst das! 💪</p>
+
+    <div class="card stats">
+      <div class="stat"><b id="streakDays">0</b><span>🔥 Tage in Folge</span></div>
+      <div class="stat"><b id="masteredCount">0</b><span>✅ von 120 gekonnt</span></div>
+      <div class="stat"><b id="todayDone">–</b><span>📅 Heute</span></div>
+    </div>
+
+    <button type="button" class="big" id="startDaily">▶ Tägliches Training<small>10 Minuten · alle Reihen gemischt</small></button>
+
+    <div class="card">
+      <h2>Eine Reihe üben (5 Min)</h2>
+      <div class="reihen" id="reihen"></div>
+    </div>
+
+    <div class="card">
+      <h2>Was du schon kannst</h2>
+      <div class="grid" id="grid"></div>
+      <div class="legend">
+        <span><i style="background:#e3e6ee"></i>noch nicht</span>
+        <span><i style="background:#fca5a5"></i>üben</span>
+        <span><i style="background:#fde047"></i>wird besser</span>
+        <span><i style="background:#4ade80"></i>gut</span>
+        <span><i style="background:#16a34a"></i>super schnell</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Letzte Trainings</h2>
+      <ul class="hist" id="hist"><li><span class="when">Noch kein Training.</span><span></span></li></ul>
+    </div>
+
+    <div style="display:flex; justify-content:center; gap:8px">
+      <button type="button" class="chip" id="soundBtn" aria-label="Ton an oder aus">🔊 Ton</button>
+    </div>
+  </section>
+
+  <!-- PLAY -->
+  <section class="screen" id="play" hidden>
+    <div class="bar-top">
+      <button type="button" class="chip" id="pauseBtn">⏸ Pause</button>
+      <span class="clock" id="clock">10:00</span>
+      <button type="button" class="chip" id="stopBtn">Beenden</button>
+    </div>
+    <div class="timebar"><div id="timebar"></div></div>
+    <div class="hud">
+      <span>⭐ <span id="score">0</span></span>
+      <span id="streakBox">🔥 <span id="streak">0</span></span>
+      <span>✔ <span id="okCount">0</span>/<span id="askCount">0</span></span>
+    </div>
+
+    <div class="play-wrap">
+      <div class="card qcard" id="qcard">
+        <div class="q" id="q">7 × 8</div>
+        <div class="ans" id="ans"></div>
+        <div class="fb" id="fb" aria-live="polite"></div>
+      </div>
+      <div class="pad" id="pad"></div>
+    </div>
+    <div class="card paused" id="pausedCard" hidden>⏸ Pause<br><button type="button" class="big" id="resumeBtn" style="margin-top:16px">Weiter ▶</button></div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="screen" id="result" hidden>
+    <div class="trophy" id="trophy">🏆</div>
+    <h1 id="resTitle">Super trainiert!</h1>
+    <p class="sub" id="resSub"></p>
+    <div class="card stats">
+      <div class="stat"><b id="rAsked">0</b><span>Aufgaben</span></div>
+      <div class="stat"><b id="rPct">0%</b><span>richtig</span></div>
+      <div class="stat"><b id="rBest">0</b><span>🔥 beste Serie</span></div>
+      <div class="stat"><b id="rStars">0</b><span>⭐ Sterne</span></div>
+    </div>
+    <div class="card" id="againCard">
+      <h2>Diese üben wir noch:</h2>
+      <div class="again" id="again"></div>
+    </div>
+    <button type="button" class="big" id="doneBtn">Fertig 🎉</button>
+  </section>
+</main>
+
+<script>
+// ---------- storage (on this device only) ----------
+const $ = id => document.getElementById(id);
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (_) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} };
+let stats = load('emStats', {});     // "a x b" -> { box: 0..5, seen, ok }
+let days = load('emDays', []);       // dates with a finished training, "YYYY-MM-DD"
+let history = load('emHistory', []); // last trainings
+let soundOn = load('emSound', true);
+
+const ROWS = 10, COLS = 12;
+const key = (a, b) => a + 'x' + b;
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+
+// ---------- sounds: short clips played through one audio element (reliable on iPhone/iPad) ----------
+function wavUrl(samples, sr) {
+  const n = samples.length, dv = new DataView(new ArrayBuffer(44 + n * 2));
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); dv.setUint32(4, 36 + n * 2, true); w(8, 'WAVE'); w(12, 'fmt ');
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true);
+  w(36, 'data'); dv.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) { const v = Math.max(-1, Math.min(1, samples[i])); dv.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+  return URL.createObjectURL(new Blob([dv], { type:'audio/wav' }));
+}
+// [frequency Hz, start s, length s, wave]
+const TUNES = {
+  ok:     [[880, 0, .12, 'sine'], [1320, .1, .2, 'sine']],
+  streak: [[784, 0, .1, 'square'], [988, .1, .1, 'square'], [1175, .2, .1, 'square'], [1568, .3, .25, 'square']],
+  no:     [[220, 0, .28, 'triangle'], [180, .2, .3, 'triangle']],
+  end:    [[523, 0, .15, 'square'], [659, .15, .15, 'square'], [784, .3, .15, 'square'], [1047, .45, .5, 'square']],
+};
+const sr = 22050, clips = {};
+function makeClip(name) {
+  const notes = TUNES[name], len = Math.max(...notes.map(n => n[1] + n[2])) + .1;
+  const out = new Float32Array(Math.round(sr * len));
+  notes.forEach(([f, st, d, wave]) => {
+    const s0 = Math.round(st * sr), n = Math.round(d * sr);
+    for (let i = 0; i < n && s0 + i < out.length; i++) {
+      const t = i / sr, ph = (f * t) % 1;
+      const v = wave === 'square' ? (ph < .5 ? 1 : -1) * .35 : wave === 'triangle' ? (4 * Math.abs(ph - .5) - 1) * .7 : Math.sin(2 * Math.PI * ph) * .7;
+      const env = Math.min(1, i / (sr * .01)) * Math.exp(-3 * t / d);
+      out[s0 + i] += v * env * .6;
+    }
+  });
+  return wavUrl(out, sr);
+}
+const player = new Audio(); player.setAttribute('playsinline', '');
+let unlocked = false;
+function unlockAudio() {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) {}
+  if (unlocked) return;
+  unlocked = true;
+  try { player.src = wavUrl(new Float32Array(2205), sr); const p = player.play(); if (p && p.catch) p.catch(() => { unlocked = false; }); } catch (_) { unlocked = false; }
+}
+function sfx(name) {
+  if (!soundOn) return;
+  try { clips[name] = clips[name] || makeClip(name); player.src = clips[name]; const p = player.play(); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+}
+
+// ---------- home ----------
+function boxOf(a, b) { const s = stats[key(a, b)]; return s ? s.box : -1; }
+function rowMastery(a) { let m = 0; for (let b = 1; b <= COLS; b++) if (boxOf(a, b) >= 4) m++; return Math.round(100 * m / COLS); }
+function streakDays() {
+  const set = new Set(days); let n = 0; const d = new Date();
+  if (!set.has(todayStr())) d.setDate(d.getDate() - 1);   // a streak still counts until today is over
+  while (true) {
+    const s = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (!set.has(s)) break; n++; d.setDate(d.getDate() - 1);
+  }
+  return n;
+}
+function renderHome() {
+  let mastered = 0;
+  for (let a = 1; a <= ROWS; a++) for (let b = 1; b <= COLS; b++) if (boxOf(a, b) >= 4) mastered++;
+  $('masteredCount').textContent = mastered;
+  $('streakDays').textContent = streakDays();
+  $('todayDone').textContent = days.includes(todayStr()) ? '✅' : '–';
+  $('reihen').innerHTML = Array.from({ length:ROWS }, (_, i) =>
+    '<button type="button" class="reihe" data-row="' + (i + 1) + '">' + (i + 1) + '<small>' + rowMastery(i + 1) + '%</small></button>').join('');
+  let g = '<span></span>';
+  for (let b = 1; b <= COLS; b++) g += '<span class="h">' + b + '</span>';
+  for (let a = 1; a <= ROWS; a++) {
+    g += '<span class="h">' + a + '</span>';
+    for (let b = 1; b <= COLS; b++) { const x = boxOf(a, b); g += '<span class="cell' + (x >= 0 ? ' b' + x : '') + '" title="' + a + ' × ' + b + '"></span>'; }
+  }
+  $('grid').innerHTML = g;
+  $('hist').innerHTML = history.length
+    ? history.slice(-6).reverse().map(h => '<li><span class="when">' + h.date.slice(8, 10) + '.' + h.date.slice(5, 7) + '. · ' + h.mode + '</span><span>' + h.ok + '/' + h.asked + ' richtig</span></li>').join('')
+    : '<li><span class="when">Noch kein Training.</span><span></span></li>';
+  $('soundBtn').textContent = soundOn ? '🔊 Ton an' : '🔇 Ton aus';
+  document.querySelectorAll('.reihe').forEach(btn => { btn.onclick = () => startSession([+btn.dataset.row], 5); });
+}
+
+// ---------- session ----------
+let S = null, tick = null;
+const PRAISE = ['Super!', 'Richtig!', 'Klasse!', 'Spitze!', 'Genau!', 'Toll!', 'Prima!', 'Stark!'];
+
+function startSession(rows, minutes) {
+  unlockAudio();
+  S = { rows, total:minutes * 60000, left:minutes * 60000, endAt:Date.now() + minutes * 60000, running:true,
+        asked:0, ok:0, streak:0, best:0, stars:0, wrong:[], retry:[], cur:null, typed:'', locked:false, timeUp:false,
+        mode: rows.length === ROWS ? 'Training' : rows[0] + 'er-Reihe' };
+  show('play'); $('pausedCard').hidden = true; $('qcard').hidden = false; $('pad').hidden = false;
+  clearInterval(tick); tick = setInterval(step, 250);
+  $('timebar').style.transition = 'none'; step(); void $('timebar').offsetWidth; $('timebar').style.transition = '';
+  nextQuestion(); hud();
+}
+function step() {
+  if (!S || !S.running) return;
+  S.left = Math.max(0, S.endAt - Date.now());
+  const f = S.left / S.total;
+  $('clock').textContent = String(Math.floor(Math.ceil(S.left / 1000) / 60)).padStart(2, '0') + ':' + String(Math.ceil(S.left / 1000) % 60).padStart(2, '0');
+  $('timebar').style.width = (f * 100) + '%';
+  document.documentElement.style.setProperty('--zone', f > .5 ? '#22c55e' : f > .25 ? '#f59e0b' : '#ef4444');
+  if (S.left <= 0 && !S.timeUp) {
+    S.timeUp = true;
+    if (S.typed === '' && !S.locked) endSession(); else $('fb').textContent = 'Letzte Aufgabe!';
+  }
+}
+function pickFact() {
+  // a wrong answer comes back after 3 other questions
+  if (S.retry.length && S.retry[0].due <= S.asked) return S.retry.shift().f;
+  const pool = []; let sum = 0;
+  S.rows.forEach(a => { for (let b = 1; b <= COLS; b++) {
+    const x = boxOf(a, b);
+    let w = x < 0 ? 6 : [12, 8, 5, 3, 1.5, .8][x];
+    if (S.cur && S.cur.a === a && S.cur.b === b) w = 0;
+    if (S.rows.length > 1 && (a === 1 || b === 1)) w *= .4;   // the 1-row is easy: ask it less in the mixed training
+    pool.push([a, b, w]); sum += w;
+  } });
+  let r = Math.random() * sum;
+  for (const [a, b, w] of pool) { r -= w; if (r <= 0) return { a, b }; }
+  return { a:pool[0][0], b:pool[0][1] };
+}
+function nextQuestion() {
+  const f = pickFact();
+  const flip = Math.random() < .5 && f.b <= 10 && f.a !== f.b;   // sometimes show 8 × 7 instead of 7 × 8
+  S.cur = { a:f.a, b:f.b, x:flip ? f.b : f.a, y:flip ? f.a : f.b, shown:Date.now() };
+  S.typed = ''; S.locked = false;
+  $('q').textContent = S.cur.x + ' × ' + S.cur.y;
+  $('ans').textContent = ''; $('ans').className = 'ans';
+  $('fb').textContent = S.timeUp ? 'Letzte Aufgabe!' : ''; $('fb').className = 'fb';
+}
+function typeDigit(d) {
+  if (!S || S.locked || !S.running) return;
+  if (S.typed.length >= 3) return;
+  if (S.typed === '' && d === '0') { S.typed = '0'; } else S.typed = (S.typed === '0' ? '' : S.typed) + d;
+  $('ans').textContent = S.typed;
+}
+function backspace() { if (!S || S.locked || !S.running) return; S.typed = S.typed.slice(0, -1); $('ans').textContent = S.typed; }
+function submit() {
+  if (!S || S.locked || !S.running || S.typed === '') return;
+  S.locked = true; S.asked++;
+  const { a, b } = S.cur, right = a * b, ms = Date.now() - S.cur.shown, k = key(a, b);
+  const st = stats[k] || { box:-1, seen:0, ok:0 };
+  st.seen++;
+  if (+S.typed === right) {
+    st.ok++;
+    const fast = ms < 6000;
+    st.box = st.box < 0 ? (fast ? 2 : 1) : fast ? Math.min(5, st.box + 1) : Math.max(st.box, 1);
+    S.ok++; S.streak++; S.best = Math.max(S.best, S.streak); S.stars += S.streak >= 5 ? 2 : 1;
+    $('ans').className = 'ans ok';
+    const special = S.streak > 0 && S.streak % 5 === 0;
+    $('fb').textContent = special ? '🔥 ' + S.streak + ' richtig hintereinander!' : PRAISE[Math.floor(Math.random() * PRAISE.length)];
+    $('fb').className = 'fb ok';
+    sfx(special ? 'streak' : 'ok');
+    stats[k] = st; save('emStats', stats); hud();
+    setTimeout(after, special ? 1100 : 650);
+  } else {
+    st.box = 0;
+    S.streak = 0;
+    if (!S.wrong.some(w => w.a === a && w.b === b)) S.wrong.push({ a, b });
+    S.retry.push({ f:{ a, b }, due:S.asked + 3 });
+    $('ans').className = 'ans no'; $('ans').textContent = right;
+    $('fb').textContent = 'Fast! ' + S.cur.x + ' × ' + S.cur.y + ' = ' + right;
+    $('fb').className = 'fb no';
+    sfx('no');
+    stats[k] = st; save('emStats', stats); hud();
+    setTimeout(after, 2200);
+  }
+}
+function after() { if (!S) return; if (S.timeUp) endSession(); else nextQuestion(); }
+function hud() {
+  $('score').textContent = S.stars; $('streak').textContent = S.streak;
+  $('streakBox').className = S.streak >= 5 ? 'hot' : '';
+  $('okCount').textContent = S.ok; $('askCount').textContent = S.asked;
+}
+function pause() {
+  if (!S || !S.running) return;
+  S.left = Math.max(0, S.endAt - Date.now()); S.running = false;
+  $('qcard').hidden = true; $('pad').hidden = true; $('pausedCard').hidden = false;
+}
+function resume() {
+  if (!S || S.running) return;
+  S.endAt = Date.now() + S.left; S.running = true; S.cur.shown = Date.now();
+  $('qcard').hidden = false; $('pad').hidden = false; $('pausedCard').hidden = true;
+}
+function endSession() {
+  if (!S) return;
+  clearInterval(tick);
+  const played = S.total - S.left;
+  if (S.asked > 0) {
+    history.push({ date:todayStr(), mode:S.mode, asked:S.asked, ok:S.ok }); history = history.slice(-30); save('emHistory', history);
+  }
+  // the day counts once at least half of the session was played
+  if (played >= S.total / 2 && !days.includes(todayStr())) { days.push(todayStr()); days = days.slice(-400); save('emDays', days); }
+  const pct = S.asked ? Math.round(100 * S.ok / S.asked) : 0;
+  $('rAsked').textContent = S.asked; $('rPct').textContent = pct + '%'; $('rBest').textContent = S.best; $('rStars').textContent = S.stars;
+  $('trophy').textContent = pct >= 90 ? '🏆' : pct >= 70 ? '🥇' : '💪';
+  $('resTitle').textContent = pct >= 90 ? 'Wow, super!' : pct >= 70 ? 'Super trainiert!' : 'Gut gemacht!';
+  $('resSub').textContent = days.includes(todayStr()) ? '🔥 ' + streakDays() + (streakDays() === 1 ? ' Tag' : ' Tage') + ' in Folge! Morgen geht es weiter.' : 'Morgen wieder 10 Minuten, dann wächst deine Serie.';
+  $('againCard').hidden = S.wrong.length === 0;
+  $('again').innerHTML = S.wrong.map(w => '<span>' + w.a + ' × ' + w.b + ' = ' + (w.a * w.b) + '</span>').join('');
+  S = null;
+  show('result'); sfx('end'); confetti();
+}
+function confetti() {
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const pool = ['⭐', '🎉', '✨', '🔥', '🏆', '✖️'];
+  for (let i = 0; i < 36; i++) {
+    const d = document.createElement('div'); d.className = 'confetti'; d.textContent = pool[i % pool.length];
+    d.style.left = (Math.random() * 100) + 'vw'; d.style.animationDelay = (Math.random() * .8) + 's';
+    document.body.appendChild(d); setTimeout(() => d.remove(), 4000);
+  }
+}
+function show(id) { ['home', 'play', 'result'].forEach(s => { $(s).hidden = s !== id; }); window.scrollTo(0, 0); }
+
+// ---------- number pad and keyboard ----------
+$('pad').innerHTML = ['7','8','9','4','5','6','1','2','3','⌫','0','OK'].map(k =>
+  '<button type="button" class="key' + (k === 'OK' ? ' go' : k === '⌫' ? ' del' : '') + '" data-k="' + k + '">' + k + '</button>').join('');
+$('pad').addEventListener('click', e => {
+  const k = e.target.closest('.key'); if (!k) return;
+  const v = k.dataset.k;
+  if (v === 'OK') submit(); else if (v === '⌫') backspace(); else typeDigit(v);
+});
+document.addEventListener('keydown', e => {
+  if ($('play').hidden) return;
+  if (/^[0-9]$/.test(e.key)) typeDigit(e.key);
+  else if (e.key === 'Backspace') backspace();
+  else if (e.key === 'Enter') submit();
+});
+
+// ---------- buttons ----------
+$('startDaily').onclick = () => startSession([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10);
+$('pauseBtn').onclick = pause;
+$('resumeBtn').onclick = resume;
+let stopArmed = null;
+$('stopBtn').onclick = () => {
+  const b = $('stopBtn');
+  if (!stopArmed) { b.textContent = 'Wirklich?'; stopArmed = setTimeout(() => { stopArmed = null; b.textContent = 'Beenden'; }, 3000); return; }
+  clearTimeout(stopArmed); stopArmed = null; b.textContent = 'Beenden';
+  endSession();
+};
+$('doneBtn').onclick = () => { renderHome(); show('home'); };
+$('soundBtn').onclick = () => { soundOn = !soundOn; save('emSound', soundOn); unlockAudio(); renderHome(); if (soundOn) sfx('ok'); };
+
+renderHome();
+</script>
+
+</body>
+</html>
