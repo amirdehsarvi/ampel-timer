@@ -57,7 +57,8 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
 .big small{display:block; font-size:16px; font-weight:600; opacity:.9}
 .chip{background:var(--card); border-radius:999px; padding:6px 14px 4px; font-weight:700; font-size:17px; box-shadow:0 2px 0 rgba(0,0,0,.08)}
 .seg{display:flex; background:var(--soft); border-radius:16px; padding:4px; gap:4px}
-.seg button{flex:1; border-radius:12px; padding:8px 4px 5px; font-weight:800; font-size:clamp(16px, 4.4vw, 21px); background:transparent}
+.seg{flex-wrap:wrap}
+.seg button{flex:1 1 30%; border-radius:12px; padding:8px 4px 5px; font-weight:800; font-size:clamp(16px, 4.4vw, 21px); background:transparent}
 .seg button[aria-pressed="true"]{background:var(--accent); color:#fff}
 .gridtabs{display:flex; gap:6px; margin-bottom:8px}
 .gridtabs button{background:var(--soft); border-radius:999px; padding:4px 12px 2px; font-weight:800; font-size:16px}
@@ -93,6 +94,9 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
 .hud .hot{color:var(--accent2)}
 .qcard{text-align:center; padding:12px 16px 14px}
 .q{font-size:clamp(58px, 17vw, 110px); font-weight:800; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:.02em}
+.q.word{font-size:clamp(19px, 5.2vw, 28px); font-weight:700; line-height:1.35; letter-spacing:0; text-wrap:pretty}
+.q.word .em{display:block; font-size:2.2em; line-height:1.1; margin-bottom:6px}
+.q.word .hard{display:inline-block; background:#fef3c7; color:#92400e; border-radius:999px; padding:2px 10px 0; font-size:.7em; font-weight:800; margin-bottom:6px}
 .ans{
   display:inline-block; margin-top:6px; min-width:2.6ch; min-height:1.1em; text-align:center;
   font-size:clamp(50px, 14vw, 92px); font-weight:800; line-height:1.1; font-variant-numeric:tabular-nums;
@@ -160,6 +164,7 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
         <button type="button" id="opX">× Mal</button>
         <button type="button" id="opD">÷ Geteilt</button>
         <button type="button" id="opR">÷ mit Rest</button>
+        <button type="button" id="opW">📖 Text</button>
         <button type="button" id="opA">Alles</button>
       </div>
     </div>
@@ -254,9 +259,9 @@ let soundOn = load('emSound', true);
 let ops = load('emOps', 'all');           // 'x' multiply, 'd' divide, 'r' divide with remainder, 'all' mixed
 if (ops === 'both') ops = 'all';
 let gridOp = ops === 'all' ? 'x' : ops;
-const opsList = () => ops === 'all' ? ['x', 'd', 'r'] : [ops];
-const validFact = (a, op) => op !== 'r' || a >= 2;              // dividing by 1 never leaves a remainder
-const factCount = op => op === 'r' ? 9 * 12 : 120;
+const opsList = () => ops === 'all' ? ['x', 'd', 'r', 'w'] : [ops];
+const validFact = (a, op) => op !== 'w' && (op !== 'r' || a >= 2);   // word problems are not in the grid; dividing by 1 never leaves a remainder
+const factCount = op => op === 'w' ? 0 : op === 'r' ? 9 * 12 : 120;
 
 const ROWS = 10, COLS = 12;
 // a fact is row a with b (1..12): multiply a × b, or divide (a·b) ÷ a
@@ -331,8 +336,9 @@ function renderHome() {
   $('opD').setAttribute('aria-pressed', String(ops === 'd'));
   $('opR').setAttribute('aria-pressed', String(ops === 'r'));
   $('opA').setAttribute('aria-pressed', String(ops === 'all'));
+  $('opW').setAttribute('aria-pressed', String(ops === 'w'));
   $('gR').setAttribute('aria-pressed', String(gridOp === 'r'));
-  $('dailySub').textContent = '10 Minuten · ' + ({ x:'Mal-Aufgaben', d:'Geteilt-Aufgaben', r:'Geteilt mit Rest', all:'×, ÷ und Rest gemischt' })[ops];
+  $('dailySub').textContent = '10 Minuten · ' + ({ x:'Mal-Aufgaben', d:'Geteilt-Aufgaben', r:'Geteilt mit Rest', w:'Textaufgaben', all:'×, ÷, Rest und Textaufgaben' })[ops];
   $('gX').setAttribute('aria-pressed', String(gridOp === 'x'));
   $('gD').setAttribute('aria-pressed', String(gridOp === 'd'));
   $('streakDays').textContent = streakDays();
@@ -366,7 +372,7 @@ function startSession(rows, minutes) {
   S = { rows, total:minutes * 60000, left:minutes * 60000, endAt:Date.now() + minutes * 60000, running:true,
         asked:0, ok:0, streak:0, best:0, stars:0, wrong:[], retry:[], cur:null, typed:'', locked:false, timeUp:false,
         ops: opsList(),
-        mode: (rows.length === ROWS ? 'Training' : rows[0] + 'er-Reihe') + ' ' + ({ x:'×', d:'÷', r:'÷ Rest', all:'× ÷ Rest' })[ops] };
+        mode: (rows.length === ROWS ? 'Training' : rows[0] + 'er-Reihe') + ' ' + ({ x:'×', d:'÷', r:'÷ Rest', w:'Text', all:'× ÷ Rest Text' })[ops] };
   show('play'); $('pausedCard').hidden = true; $('qcard').hidden = false; $('pad').hidden = false;
   clearInterval(tick); tick = setInterval(step, 250);
   $('timebar').style.transition = 'none'; step(); void $('timebar').offsetWidth; $('timebar').style.transition = '';
@@ -384,9 +390,64 @@ function step() {
     if (S.typed === '' && !S.locked) endSession(); else $('fb').textContent = 'Letzte Aufgabe!';
   }
 }
+// ---------- word problems: fresh numbers every time; about a third are two-step puzzles ----------
+const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+const pickOne = arr => arr[Math.floor(Math.random() * arr.length)];
+const KIDS = [['Lena', 1], ['Tom', 0], ['Mia', 1], ['Ben', 0], ['Emma', 1], ['Paul', 0], ['Sofia', 1], ['Noah', 0], ['Lina', 1], ['Leo', 0]];
+const who = () => { const [n, f] = pickOne(KIDS); return { n, er:f ? 'sie' : 'er', Er:f ? 'Sie' : 'Er', sein:f ? 'ihr' : 'sein' }; };
+const WORD = [
+  // remainder
+  () => { const k = ri(3, 9), q = ri(2, 9), r = ri(1, k - 1), n = k * q + r;
+    return { kind:'rest', em:'🍦', text:k + ' Kinder möchten Eis. In der Truhe sind ' + n + ' Kugeln. Jedes Kind bekommt gleich viele. Wie viele Kugeln bekommt jedes Kind – und wie viele bleiben übrig?', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r }; },
+  () => { const k = ri(3, 8), q = ri(2, 9), r = ri(1, k - 1), n = k * q + r;
+    return { kind:'rest', em:'🚣', text:n + ' Kinder machen einen Bootsausflug. In jedes Boot passen ' + k + ' Kinder. Wie viele Boote werden ganz voll – und wie viele Kinder bleiben übrig?', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r }; },
+  () => { const p = who(), k = ri(3, 9), q = ri(3, 10), r = ri(1, k - 1), n = k * q + r;
+    return { kind:'rest', em:'🃏', text:p.n + ' verteilt ' + n + ' Karten gerecht an ' + k + ' Spieler. Wie viele Karten bekommt jeder – und wie viele bleiben im Stapel?', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r }; },
+  // division
+  () => { const p = who(), k = ri(2, 9), q = ri(2, 10), n = k * q;
+    return { kind:'div', em:'🌟', text:p.n + ' hat ' + n + ' Sticker und verteilt sie gerecht an ' + k + ' Freunde. Wie viele Sticker bekommt jeder?', right:q, short:n + ' ÷ ' + k + ' = ' + q }; },
+  () => { const s = pickOne([4, 6, 8]); let k, q; do { k = ri(2, 8); q = ri(2, 6); } while ((k * q) % s !== 0);
+    const pz = k * q / s;
+    return { kind:'div', em:'🍕', text:k + ' Freunde teilen sich ' + pz + (pz === 1 ? ' Pizza' : ' Pizzen') + '. Jede Pizza hat ' + s + ' Stücke. Wie viele Stücke bekommt jeder?', right:q, short:pz + ' × ' + s + ' = ' + (k * q) + ',  ' + (k * q) + ' ÷ ' + k + ' = ' + q, hard:true }; },
+  // multiplication
+  () => { const r = ri(4, 10), c = ri(2, 6);
+    return { kind:'mul', em:'🚌', text:'Im Bus gibt es ' + r + ' Reihen mit je ' + c + ' Plätzen. Wie viele Kinder können mitfahren?', right:r * c, short:r + ' × ' + c + ' = ' + (r * c) }; },
+  () => { const [an, legs, em] = pickOne([['Spinnen', 8, '🕷️'], ['Käfer', 6, '🐞'], ['Katzen', 4, '🐈'], ['Vögel', 2, '🐦']]), k = ri(3, 10);
+    return { kind:'mul', em, text:'Wie viele Beine haben ' + k + ' ' + an + ' zusammen?', right:k * legs, short:k + ' × ' + legs + ' = ' + (k * legs) }; },
+  () => { const p = who(), w = ri(2, 9), e = ri(3, 10);
+    return { kind:'mul', em:'💶', text:p.n + ' bekommt jede Woche ' + e + ' € Taschengeld. Wie viel Geld hat ' + p.er + ' nach ' + w + ' Wochen?', right:w * e, short:w + ' × ' + e + ' = ' + (w * e) }; },
+  // addition
+  () => { const p = who(), a = ri(15, 65), b = ri(8, 40);
+    return { kind:'add', em:'🔮', text:p.n + ' hat ' + a + ' Murmeln. Zum Geburtstag bekommt ' + p.er + ' ' + b + ' dazu. Wie viele Murmeln hat ' + p.n + ' jetzt?', right:a + b, short:a + ' + ' + b + ' = ' + (a + b) }; },
+  () => { const a = ri(25, 90), b = ri(25, 90);
+    return { kind:'add', em:'📚', text:'In der Bücherei stehen ' + a + ' Bücher im ersten Regal und ' + b + ' im zweiten. Wie viele Bücher sind es zusammen?', right:a + b, short:a + ' + ' + b + ' = ' + (a + b) }; },
+  // subtraction
+  () => { const a = ri(20, 60), b = ri(5, a - 5);
+    return { kind:'sub', em:'🚍', text:'Im Bus sitzen ' + a + ' Kinder. An der Haltestelle steigen ' + b + ' aus. Wie viele Kinder sitzen noch im Bus?', right:a - b, short:a + ' − ' + b + ' = ' + (a - b) }; },
+  () => { const p = who(), a = ri(30, 100), b = ri(9, a - 5);
+    return { kind:'sub', em:'📕', text:p.n + ' hat ' + a + ' €. Ein Buch kostet ' + b + ' €. Wie viel Geld hat ' + p.er + ' danach noch?', right:a - b, short:a + ' − ' + b + ' = ' + (a - b) }; },
+  // two-step puzzles
+  () => { const p = who(), a = ri(3, 8), b = ri(4, 10), c = ri(2, a * b - 3);
+    return { kind:'mix', em:'✏️', text:p.n + ' kauft ' + a + ' Packungen Stifte mit je ' + b + ' Stiften. Dann verschenkt ' + p.er + ' ' + c + ' Stifte. Wie viele Stifte hat ' + p.n + ' noch?', right:a * b - c, short:a + ' × ' + b + ' = ' + (a * b) + ',  ' + (a * b) + ' − ' + c + ' = ' + (a * b - c), hard:true }; },
+  () => { const a = ri(3, 7), b = ri(3, 9), c = ri(2, a * b - 2);
+    return { kind:'mix', em:'🐒', text:'Im Zoo gibt es ' + a + ' Gehege mit je ' + b + ' Affen. ' + c + ' Affen schlafen. Wie viele Affen sind wach?', right:a * b - c, short:a + ' × ' + b + ' = ' + (a * b) + ',  ' + (a * b) + ' − ' + c + ' = ' + (a * b - c), hard:true }; },
+  () => { const h = ri(3, 12), k = ri(2, 8);
+    return { kind:'mix', em:'🐔🐄', text:'Auf dem Bauernhof leben ' + h + ' Hühner und ' + k + ' Kühe. Wie viele Beine haben alle Tiere zusammen?', right:h * 2 + k * 4, short:h + ' × 2 = ' + (h * 2) + ',  ' + k + ' × 4 = ' + (k * 4) + ',  zusammen ' + (h * 2 + k * 4), hard:true }; },
+  () => { const k = ri(2, 6), q = ri(3, 8), c = ri(2, 6), n = k * q + c;
+    return { kind:'mix', em:'🍎', text:'Mama kauft ' + n + ' Äpfel. ' + c + ' behält sie für sich, den Rest verteilt sie gerecht an ' + k + ' Kinder. Wie viele Äpfel bekommt jedes Kind?', right:q, short:n + ' − ' + c + ' = ' + (k * q) + ',  ' + (k * q) + ' ÷ ' + k + ' = ' + q, hard:true }; },
+  () => { let a, b, k, r; do { a = ri(2, 4); b = ri(6, 12); k = pickOne([4, 5, 6]); r = (a * b) % k; } while (r === 0);
+    const t = a * b;
+    return { kind:'mixrest', em:'🍪', text:'Es werden ' + a + ' Bleche mit je ' + b + ' Keksen gebacken. Die Kekse kommen in Tüten zu je ' + k + '. Wie viele Tüten werden voll – und wie viele Kekse bleiben übrig?', right:Math.floor(t / k), rest:r, short:a + ' × ' + b + ' = ' + t + ',  ' + t + ' ÷ ' + k + ' = ' + Math.floor(t / k) + ' Rest ' + r, hard:true }; },
+  () => { const g = ri(8, 15), j = ri(8, 15), f = ri(2, 6);
+    return { kind:'mix', em:'🏫', text:'In der Klasse sind ' + g + ' Mädchen und ' + j + ' Jungen. Heute fehlen ' + f + ' Kinder. Wie viele Kinder sind da?', right:g + j - f, short:g + ' + ' + j + ' = ' + (g + j) + ',  ' + (g + j) + ' − ' + f + ' = ' + (g + j - f), hard:true }; },
+];
+function makeWord() { return pickOne(WORD)(); }
+
 function pickFact() {
   // a wrong answer comes back after 3 other questions
   if (S.retry.length && S.retry[0].due <= S.asked) return S.retry.shift().f;
+  // word problems: all of them when chosen alone, about one in five in the mix
+  if (S.ops.indexOf('w') >= 0 && (S.ops.length === 1 || Math.random() < .2)) return { op:'w' };
   const pool = []; let sum = 0;
   S.ops.forEach(op => S.rows.forEach(a => { if (!validFact(a, op)) return; for (let b = 1; b <= COLS; b++) {
     const x = boxOf(a, b, op);
@@ -395,7 +456,7 @@ function pickFact() {
     if (S.rows.length > 1 && (a === 1 || b === 1)) w *= .4;   // the 1-row is easy: ask it less in the mixed training
     pool.push([a, b, op, w]); sum += w;
   } }));
-  if (!pool.length) return { a:S.rows[0], b:1 + Math.floor(Math.random() * COLS), op:'d' };   // 1-row with remainder only: use plain division
+  if (!pool.length) return S.ops.indexOf('w') >= 0 ? { op:'w' } : { a:S.rows[0], b:1 + Math.floor(Math.random() * COLS), op:'d' };   // 1-row with remainder only: use plain division
   let r = Math.random() * sum;
   for (const [a, b, op, w] of pool) { r -= w; if (r <= 0) return { a, b, op }; }
   return { a:pool[0][0], b:pool[0][1], op:pool[0][2] };
@@ -403,9 +464,12 @@ function pickFact() {
 function nextQuestion() {
   const f = pickFact();
   const flip = Math.random() < .5 && f.b <= 10 && f.a !== f.b;   // sometimes 8 × 7 instead of 7 × 8, or 56 ÷ 8 instead of 56 ÷ 7
-  if (f.op === 'r') {
+  if (f.op === 'w') {
+    const pr = f.prob || makeWord();
+    S.cur = { a:0, b:0, op:'w', prob:pr, kind:pr.kind, text:pr.text, right:pr.right, rest:pr.rest, twoBox:pr.rest !== undefined, short:pr.short, shown:Date.now() };
+  } else if (f.op === 'r') {
     const rest = 1 + Math.floor(Math.random() * (f.a - 1));
-    S.cur = { a:f.a, b:f.b, op:'r', text:(f.a * f.b + rest) + ' ÷ ' + f.a, right:f.b, rest, shown:Date.now() };
+    S.cur = { a:f.a, b:f.b, op:'r', text:(f.a * f.b + rest) + ' ÷ ' + f.a, right:f.b, rest, twoBox:true, shown:Date.now() };
   } else if (f.op === 'd') {
     const div = flip ? f.b : f.a;
     S.cur = { a:f.a, b:f.b, op:'d', text:(f.a * f.b) + ' ÷ ' + div, right:(f.a * f.b) / div, shown:Date.now() };
@@ -413,13 +477,16 @@ function nextQuestion() {
     S.cur = { a:f.a, b:f.b, op:'x', text:(flip ? f.b : f.a) + ' × ' + (flip ? f.a : f.b), right:f.a * f.b, shown:Date.now() };
   }
   S.typed = ''; S.typedR = ''; S.field = 'q'; S.locked = false;
-  $('q').textContent = S.cur.text;
+  if (S.cur.op === 'w') {
+    $('q').className = 'q word';
+    $('q').innerHTML = '<span class="em">' + S.cur.prob.em + '</span>' + (S.cur.prob.hard ? '<span class="hard">🧠 Knobelaufgabe</span><br>' : '') + S.cur.text;
+  } else { $('q').className = 'q'; $('q').textContent = S.cur.text; }
   showAns('');
   $('fb').textContent = S.timeUp ? 'Letzte Aufgabe!' : ''; $('fb').className = 'fb';
 }
 // the answer area: one number, or for remainder questions two boxes "7 Rest 5"
 function showAns(state, q, r) {
-  const el = $('ans'), isR = S.cur.op === 'r';
+  const el = $('ans'), isR = !!S.cur.twoBox;
   const qv = q !== undefined ? q : S.typed, rv = r !== undefined ? r : S.typedR;
   el.className = 'ans' + (isR ? ' rest' : '') + (state ? ' ' + state : '');
   if (isR) {
@@ -431,29 +498,29 @@ function showAns(state, q, r) {
 }
 function typeDigit(d) {
   if (!S || S.locked || !S.running) return;
-  if (S.cur.op === 'r' && S.field === 'r') { S.typedR = d; showAns(''); return; }   // a remainder is always one digit
-  if (S.typed.length >= 3) return;
+  if (S.cur.twoBox && S.field === 'r') { S.typedR = d; showAns(''); return; }   // a remainder is always one digit
+  if (S.typed.length >= (S.cur.op === 'w' ? 4 : 3)) return;
   if (S.typed === '' && d === '0') { S.typed = '0'; } else S.typed = (S.typed === '0' ? '' : S.typed) + d;
   showAns('');
 }
 function backspace() {
   if (!S || S.locked || !S.running) return;
-  if (S.cur.op === 'r' && S.field === 'r') { if (S.typedR !== '') S.typedR = ''; else S.field = 'q'; showAns(''); return; }
+  if (S.cur.twoBox && S.field === 'r') { if (S.typedR !== '') S.typedR = ''; else S.field = 'q'; showAns(''); return; }
   S.typed = S.typed.slice(0, -1); showAns('');
 }
 function submit() {
   if (!S || S.locked || !S.running || S.typed === '') return;
-  if (S.cur.op === 'r' && S.field === 'q') { S.field = 'r'; showAns(''); return; }   // first the whole part, then the remainder
-  if (S.cur.op === 'r' && S.typedR === '') return;
+  if (S.cur.twoBox && S.field === 'q') { S.field = 'r'; showAns(''); return; }   // first the whole part, then the remainder
+  if (S.cur.twoBox && S.typedR === '') return;
   S.locked = true; S.asked++;
-  const { a, b, op } = S.cur, right = S.cur.right, ms = Date.now() - S.cur.shown, k = key(a, b, op);
-  const rightText = op === 'r' ? right + ' Rest ' + S.cur.rest : String(right);
+  const { a, b, op } = S.cur, right = S.cur.right, ms = Date.now() - S.cur.shown, k = op === 'w' ? 'w:' + S.cur.kind : key(a, b, op);
+  const rightText = S.cur.twoBox ? right + ' Rest ' + S.cur.rest : String(right);
   const st = stats[k] || { box:-1, seen:0, ok:0 };
   st.seen++;
-  const correct = op === 'r' ? (+S.typed === right && +S.typedR === S.cur.rest) : +S.typed === right;
+  const correct = S.cur.twoBox ? (+S.typed === right && +S.typedR === S.cur.rest) : +S.typed === right;
   if (correct) {
     st.ok++;
-    const fast = ms < (op === 'r' ? 9000 : 6000);
+    const fast = ms < (op === 'w' ? 30000 : op === 'r' ? 9000 : 6000);
     st.box = st.box < 0 ? (fast ? 2 : 1) : fast ? Math.min(5, st.box + 1) : Math.max(st.box, 1);
     S.ok++; S.streak++; S.best = Math.max(S.best, S.streak); S.stars += S.streak >= 5 ? 2 : 1;
     showAns('ok');
@@ -466,10 +533,11 @@ function submit() {
   } else {
     st.box = 0;
     S.streak = 0;
-    if (!S.wrong.some(w => w.k === k)) S.wrong.push({ k, text:S.cur.text + ' = ' + rightText });
-    S.retry.push({ f:{ a, b, op }, due:S.asked + 3 });
-    showAns('no', String(right), op === 'r' ? String(S.cur.rest) : undefined);
-    $('fb').textContent = 'Fast! ' + S.cur.text + ' = ' + rightText;
+    const wtext = op === 'w' ? S.cur.prob.em + ' ' + S.cur.short : S.cur.text + ' = ' + rightText;
+    if (!S.wrong.some(w => w.text === wtext)) S.wrong.push({ k, text:wtext });
+    S.retry.push({ f:op === 'w' ? { op, prob:S.cur.prob } : { a, b, op }, due:S.asked + 3 });
+    showAns('no', String(right), S.cur.twoBox ? String(S.cur.rest) : undefined);
+    $('fb').textContent = op === 'w' ? 'Fast! So geht es: ' + S.cur.short : 'Fast! ' + S.cur.text + ' = ' + rightText;
     $('fb').className = 'fb no';
     sfx('no');
     stats[k] = st; save('emStats', stats); hud();
@@ -544,6 +612,7 @@ $('opX').onclick = () => setOps('x');
 $('opD').onclick = () => setOps('d');
 $('opR').onclick = () => setOps('r');
 $('opA').onclick = () => setOps('all');
+$('opW').onclick = () => setOps('w');
 $('gR').onclick = () => { gridOp = 'r'; renderHome(); };
 $('gX').onclick = () => { gridOp = 'x'; renderHome(); };
 $('gD').onclick = () => { gridOp = 'd'; renderHome(); };
