@@ -96,6 +96,9 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
 .q{font-size:clamp(58px, 17vw, 110px); font-weight:800; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:.02em}
 .q.word{font-size:clamp(19px, 5.2vw, 28px); font-weight:700; line-height:1.35; letter-spacing:0; text-wrap:pretty}
 .q.word .em{display:block; font-size:2.2em; line-height:1.1; margin-bottom:6px}
+.tr{display:block; font-size:.78em; font-weight:600; opacity:.72; margin-top:2px; unicode-bidi:isolate}
+.q.word .tr{font-size:.8em; margin-top:8px; padding-top:8px; border-top:2px dashed #e3e6ee; opacity:.8}
+.q.word .hard .tr{display:inline; margin:0; padding:0; border:0}
 .q.word .hard{display:inline-block; background:#fef3c7; color:#92400e; border-radius:999px; padding:2px 10px 0; font-size:.7em; font-weight:800; margin-bottom:6px}
 .ans{
   display:inline-block; margin-top:6px; min-width:2.6ch; min-height:1.1em; text-align:center;
@@ -149,64 +152,65 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
 
   <!-- HOME -->
   <section class="screen" id="home">
-    <h1>Einmaleins-Abenteuer</h1>
-    <p class="sub">Jeden Tag 10 Minuten. Du schaffst das! 💪</p>
+    <h1 data-t>Einmaleins-Abenteuer</h1>
+    <p class="sub" data-t>Jeden Tag 10 Minuten. Du schaffst das! 💪</p>
 
     <div class="card stats">
-      <div class="stat"><b id="streakDays">0</b><span>🔥 Tage in Folge</span></div>
+      <div class="stat"><b id="streakDays">0</b><span data-t>🔥 Tage in Folge</span></div>
       <div class="stat"><b id="masteredCount">0</b><span id="masteredOf">✅ von 120 gekonnt</span></div>
-      <div class="stat"><b id="todayDone">–</b><span>📅 Heute</span></div>
+      <div class="stat"><b id="todayDone">–</b><span data-t>📅 Heute</span></div>
     </div>
 
     <div class="card">
-      <h2>Was üben wir?</h2>
+      <h2 data-t>Was üben wir?</h2>
       <div class="seg" role="group" aria-label="Rechenart">
-        <button type="button" id="opX">× Mal</button>
-        <button type="button" id="opD">÷ Geteilt</button>
-        <button type="button" id="opR">÷ mit Rest</button>
-        <button type="button" id="opW">📖 Text</button>
-        <button type="button" id="opA">Alles</button>
+        <button type="button" id="opX" data-t>× Mal</button>
+        <button type="button" id="opD" data-t>÷ Geteilt</button>
+        <button type="button" id="opR" data-t>÷ mit Rest</button>
+        <button type="button" id="opW" data-t>📖 Text</button>
+        <button type="button" id="opA" data-t>Alles</button>
       </div>
     </div>
 
-    <button type="button" class="big" id="startDaily">▶ Tägliches Training<small id="dailySub">10 Minuten</small></button>
+    <button type="button" class="big" id="startDaily"><span data-t>▶ Tägliches Training</span><small id="dailySub">10 Minuten</small></button>
 
     <div class="card">
-      <h2>Eine Reihe üben (5 Min)</h2>
+      <h2 data-t>Eine Reihe üben (5 Min)</h2>
       <div class="reihen" id="reihen"></div>
     </div>
 
     <div class="card">
-      <h2>Was du schon kannst</h2>
+      <h2 data-t>Was du schon kannst</h2>
       <div class="gridtabs" role="group" aria-label="Tabelle zeigen">
-        <button type="button" id="gX">× Mal</button>
-        <button type="button" id="gD">÷ Geteilt</button>
-        <button type="button" id="gR">÷ Rest</button>
+        <button type="button" id="gX" data-t>× Mal</button>
+        <button type="button" id="gD" data-t>÷ Geteilt</button>
+        <button type="button" id="gR" data-t>÷ Rest</button>
       </div>
       <div class="grid" id="grid"></div>
       <div class="legend">
-        <span><i style="background:#e3e6ee"></i>noch nicht</span>
-        <span><i style="background:#fca5a5"></i>üben</span>
-        <span><i style="background:#fde047"></i>wird besser</span>
-        <span><i style="background:#4ade80"></i>gut</span>
-        <span><i style="background:#16a34a"></i>super schnell</span>
+        <span><i style="background:#e3e6ee"></i><span data-t>noch nicht</span></span>
+        <span><i style="background:#fca5a5"></i><span data-t>üben</span></span>
+        <span><i style="background:#fde047"></i><span data-t>wird besser</span></span>
+        <span><i style="background:#4ade80"></i><span data-t>gut</span></span>
+        <span><i style="background:#16a34a"></i><span data-t>super schnell</span></span>
       </div>
     </div>
 
     <div class="card">
-      <h2>Letzte Trainings</h2>
+      <h2 data-t>Letzte Trainings</h2>
       <ul class="hist" id="hist"><li><span class="when">Noch kein Training.</span><span></span></li></ul>
     </div>
 
     <div style="display:flex; justify-content:center; gap:8px">
       <button type="button" class="chip" id="soundBtn" aria-label="Ton an oder aus">🔊 Ton</button>
+      <button type="button" class="chip" id="helpBtn" aria-label="Sprache">🌐 Deutsch</button>
     </div>
   </section>
 
   <!-- PLAY -->
   <section class="screen" id="play" hidden>
     <div class="bar-top">
-      <button type="button" class="chip" id="pauseBtn">⏸ Pause</button>
+      <button type="button" class="chip" id="pauseBtn" data-t>⏸ Pause</button>
       <span class="clock" id="clock">10:00</span>
       <button type="button" class="chip" id="stopBtn">Beenden</button>
     </div>
@@ -225,7 +229,7 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
       </div>
       <div class="pad" id="pad"></div>
     </div>
-    <div class="card paused" id="pausedCard" hidden>⏸ Pause<br><button type="button" class="big" id="resumeBtn" style="margin-top:16px">Weiter ▶</button></div>
+    <div class="card paused" id="pausedCard" hidden><span data-t>⏸ Pause</span><button type="button" class="big" id="resumeBtn" style="margin-top:16px" data-t>Weiter ▶</button></div>
   </section>
 
   <!-- RESULT -->
@@ -234,16 +238,16 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
     <h1 id="resTitle">Super trainiert!</h1>
     <p class="sub" id="resSub"></p>
     <div class="card stats">
-      <div class="stat"><b id="rAsked">0</b><span>Aufgaben</span></div>
-      <div class="stat"><b id="rPct">0%</b><span>richtig</span></div>
-      <div class="stat"><b id="rBest">0</b><span>🔥 beste Serie</span></div>
-      <div class="stat"><b id="rStars">0</b><span>⭐ Sterne</span></div>
+      <div class="stat"><b id="rAsked">0</b><span data-t>Aufgaben</span></div>
+      <div class="stat"><b id="rPct">0%</b><span data-t>richtig</span></div>
+      <div class="stat"><b id="rBest">0</b><span data-t>🔥 beste Serie</span></div>
+      <div class="stat"><b id="rStars">0</b><span data-t>⭐ Sterne</span></div>
     </div>
     <div class="card" id="againCard">
-      <h2>Diese üben wir noch:</h2>
+      <h2 data-t>Diese üben wir noch:</h2>
       <div class="again" id="again"></div>
     </div>
-    <button type="button" class="big" id="doneBtn">Fertig 🎉</button>
+    <button type="button" class="big" id="doneBtn" data-t>Fertig 🎉</button>
   </section>
 </main>
 
@@ -256,6 +260,53 @@ let stats = load('emStats', {});     // "a x b" -> { box: 0..5, seen, ok }
 let days = load('emDays', []);       // dates with a finished training, "YYYY-MM-DD"
 let history = load('emHistory', []); // last trainings
 let soundOn = load('emSound', true);
+// German stays on screen; a helper line underneath in Spanish or Farsi lets a grown-up follow along
+let help = load('emHelp', '');
+if (help !== 'es' && help !== 'fa') help = '';
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+const trSpan = t => '<span class="tr" lang="' + help + '" dir="' + (help === 'fa' ? 'rtl' : 'ltr') + '">' + esc(t) + '</span>';
+// hl(German, Spanish, Farsi) -> German, plus the helper line when one is switched on
+const hl = (de, es, fa) => esc(de) + (help ? trSpan(help === 'es' ? es : fa) : '');
+const FD = x => String(x).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+const STATIC = {
+  'Einmaleins-Abenteuer': ['Aventura de las tablas', 'ماجرای جدول ضرب'],
+  'Jeden Tag 10 Minuten. Du schaffst das! 💪': ['Cada día 10 minutos. ¡Tú puedes! 💪', 'هر روز ۱۰ دقیقه. تو می‌توانی! 💪'],
+  '🔥 Tage in Folge': ['🔥 días seguidos', '🔥 روز پشت سر هم'],
+  '📅 Heute': ['📅 hoy', '📅 امروز'],
+  'Was üben wir?': ['¿Qué practicamos?', 'چه تمرین کنیم؟'],
+  '× Mal': ['× por', '× ضرب'],
+  '÷ Geteilt': ['÷ dividir', '÷ تقسیم'],
+  '÷ mit Rest': ['÷ con resto', '÷ با باقی‌مانده'],
+  '📖 Text': ['📖 problemas', '📖 مسئله'],
+  'Alles': ['todo', 'همه'],
+  '▶ Tägliches Training': ['Entrenamiento diario', 'تمرین روزانه'],
+  'Eine Reihe üben (5 Min)': ['Practicar una tabla (5 min)', 'تمرین یک جدول (۵ دقیقه)'],
+  'Was du schon kannst': ['Lo que ya sabes', 'چیزهایی که بلدی'],
+  '÷ Rest': ['÷ resto', '÷ باقی‌مانده'],
+  'noch nicht': ['todavía no', 'هنوز نه'],
+  'üben': ['practicar', 'تمرین'],
+  'wird besser': ['mejorando', 'بهتر می‌شود'],
+  'gut': ['bien', 'خوب'],
+  'super schnell': ['súper rápido', 'خیلی سریع'],
+  'Letzte Trainings': ['Últimos entrenamientos', 'تمرین‌های اخیر'],
+  '⏸ Pause': ['pausa', 'توقف'],
+  'Weiter ▶': ['seguir', 'ادامه'],
+  'Aufgaben': ['preguntas', 'سؤال'],
+  'richtig': ['correctas', 'درست'],
+  '🔥 beste Serie': ['🔥 mejor racha', '🔥 بهترین رکورد'],
+  '⭐ Sterne': ['⭐ estrellas', '⭐ ستاره'],
+  'Diese üben wir noch:': ['Esto lo practicamos más:', 'این‌ها را باز تمرین می‌کنیم:'],
+  'Fertig 🎉': ['¡Listo!', 'تمام شد'],
+};
+const HELP_NAME = { '':'Deutsch', es:'Deutsch + Español', fa:'Deutsch + فارسی' };
+function applyHelp() {
+  document.querySelectorAll('[data-t]').forEach(el => {
+    if (el.dataset.de === undefined) el.dataset.de = el.textContent;
+    const t = STATIC[el.dataset.de] || [el.dataset.de, el.dataset.de];
+    el.innerHTML = hl(el.dataset.de, t[0], t[1]);
+  });
+  $('helpBtn').textContent = '🌐 ' + HELP_NAME[help];
+}
 let ops = load('emOps', 'all');           // 'x' multiply, 'd' divide, 'r' divide with remainder, 'all' mixed
 if (ops === 'both') ops = 'all';
 let gridOp = ops === 'all' ? 'x' : ops;
@@ -331,14 +382,17 @@ function renderHome() {
   let mastered = 0; const L = opsList();
   L.forEach(op => { for (let a = 1; a <= ROWS; a++) if (validFact(a, op)) for (let b = 1; b <= COLS; b++) if (boxOf(a, b, op) >= 4) mastered++; });
   $('masteredCount').textContent = mastered;
-  $('masteredOf').textContent = '✅ von ' + L.reduce((n, op) => n + factCount(op), 0) + ' gekonnt';
+  const total = L.reduce((n, op) => n + factCount(op), 0);
+  $('masteredOf').innerHTML = hl('✅ von ' + total + ' gekonnt', '✅ de ' + total + ' dominadas', '✅ از ' + FD(total) + ' بلدی');
   $('opX').setAttribute('aria-pressed', String(ops === 'x'));
   $('opD').setAttribute('aria-pressed', String(ops === 'd'));
   $('opR').setAttribute('aria-pressed', String(ops === 'r'));
   $('opA').setAttribute('aria-pressed', String(ops === 'all'));
   $('opW').setAttribute('aria-pressed', String(ops === 'w'));
   $('gR').setAttribute('aria-pressed', String(gridOp === 'r'));
-  $('dailySub').textContent = '10 Minuten · ' + ({ x:'Mal-Aufgaben', d:'Geteilt-Aufgaben', r:'Geteilt mit Rest', w:'Textaufgaben', all:'×, ÷, Rest und Textaufgaben' })[ops];
+  $('dailySub').innerHTML = hl('10 Minuten · ' + ({ x:'Mal-Aufgaben', d:'Geteilt-Aufgaben', r:'Geteilt mit Rest', w:'Textaufgaben', all:'×, ÷, Rest und Textaufgaben' })[ops],
+    '10 minutos · ' + ({ x:'multiplicar', d:'dividir', r:'dividir con resto', w:'problemas', all:'×, ÷, resto y problemas' })[ops],
+    '۱۰ دقیقه · ' + ({ x:'ضرب', d:'تقسیم', r:'تقسیم با باقی‌مانده', w:'مسئله‌های متنی', all:'×، ÷، باقی‌مانده و مسئله' })[ops]);
   $('gX').setAttribute('aria-pressed', String(gridOp === 'x'));
   $('gD').setAttribute('aria-pressed', String(gridOp === 'd'));
   $('streakDays').textContent = streakDays();
@@ -358,14 +412,16 @@ function renderHome() {
   $('grid').innerHTML = g;
   $('hist').innerHTML = history.length
     ? history.slice(-6).reverse().map(h => '<li><span class="when">' + h.date.slice(8, 10) + '.' + h.date.slice(5, 7) + '. · ' + h.mode + '</span><span>' + h.ok + '/' + h.asked + ' richtig</span></li>').join('')
-    : '<li><span class="when">Noch kein Training.</span><span></span></li>';
+    : '<li><span class="when">' + hl('Noch kein Training.', 'Todavía no hay entrenamientos.', 'هنوز تمرینی نیست.') + '</span><span></span></li>';
   $('soundBtn').textContent = soundOn ? '🔊 Ton an' : '🔇 Ton aus';
+  applyHelp();
   document.querySelectorAll('.reihe').forEach(btn => { btn.onclick = () => startSession([+btn.dataset.row], 5); });
 }
 
 // ---------- session ----------
 let S = null, tick = null;
-const PRAISE = ['Super!', 'Richtig!', 'Klasse!', 'Spitze!', 'Genau!', 'Toll!', 'Prima!', 'Stark!'];
+const PRAISE = [['Super!', '¡Súper!', 'عالی!'], ['Richtig!', '¡Correcto!', 'درسته!'], ['Klasse!', '¡Genial!', 'آفرین!'], ['Spitze!', '¡Estupendo!', 'محشر!'],
+  ['Genau!', '¡Exacto!', 'دقیقاً!'], ['Toll!', '¡Muy bien!', 'خیلی خوب!'], ['Prima!', '¡Perfecto!', 'بی‌نظیر!'], ['Stark!', '¡Qué fuerte!', 'قوی!']];
 
 function startSession(rows, minutes) {
   unlockAudio();
@@ -387,59 +443,114 @@ function step() {
   document.documentElement.style.setProperty('--zone', f > .5 ? '#22c55e' : f > .25 ? '#f59e0b' : '#ef4444');
   if (S.left <= 0 && !S.timeUp) {
     S.timeUp = true;
-    if (S.typed === '' && !S.locked) endSession(); else $('fb').textContent = 'Letzte Aufgabe!';
+    if (S.typed === '' && !S.locked) endSession(); else $('fb').innerHTML = hl('Letzte Aufgabe!', '¡Última pregunta!', 'سؤال آخر!');
   }
 }
 // ---------- word problems: fresh numbers every time; about a third are two-step puzzles ----------
 const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 const pickOne = arr => arr[Math.floor(Math.random() * arr.length)];
-const KIDS = [['Lena', 1], ['Tom', 0], ['Mia', 1], ['Ben', 0], ['Emma', 1], ['Paul', 0], ['Sofia', 1], ['Noah', 0], ['Lina', 1], ['Leo', 0]];
-const who = () => { const [n, f] = pickOne(KIDS); return { n, er:f ? 'sie' : 'er', Er:f ? 'Sie' : 'Er', sein:f ? 'ihr' : 'sein' }; };
+const KIDS = [['Lena', 1, 'لنا'], ['Tom', 0, 'تام'], ['Mia', 1, 'میا'], ['Ben', 0, 'بن'], ['Emma', 1, 'اِما'], ['Paul', 0, 'پاول'], ['Sofia', 1, 'سوفیا'], ['Noah', 0, 'نوآ'], ['Lina', 1, 'لینا'], ['Leo', 0, 'لئو']];
+const who = () => { const [n, f, fa] = pickOne(KIDS); return { n, fa, er:f ? 'sie' : 'er' }; };
+const F = x => String(x).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);   // Persian digits
 const WORD = [
   // remainder
   () => { const k = ri(3, 9), q = ri(2, 9), r = ri(1, k - 1), n = k * q + r;
-    return { kind:'rest', em:'🍦', text:k + ' Kinder möchten Eis. In der Truhe sind ' + n + ' Kugeln. Jedes Kind bekommt gleich viele. Wie viele Kugeln bekommt jedes Kind – und wie viele bleiben übrig?', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r }; },
+    return { kind:'rest', em:'🍦', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r, text:{
+      de:k + ' Kinder möchten Eis. In der Truhe sind ' + n + ' Kugeln. Jedes Kind bekommt gleich viele. Wie viele Kugeln bekommt jedes Kind – und wie viele bleiben übrig?',
+      es:k + ' niños quieren helado. En el congelador hay ' + n + ' bolas. Cada niño recibe las mismas. ¿Cuántas bolas recibe cada niño y cuántas sobran?',
+      fa:F(k) + ' بچه بستنی می‌خواهند. در فریزر ' + F(n) + ' اسکوپ بستنی هست. به هر بچه به یک اندازه می‌رسد. به هر بچه چند اسکوپ می‌رسد و چند تا باقی می‌ماند؟' } }; },
   () => { const k = ri(3, 8), q = ri(2, 9), r = ri(1, k - 1), n = k * q + r;
-    return { kind:'rest', em:'🚣', text:n + ' Kinder machen einen Bootsausflug. In jedes Boot passen ' + k + ' Kinder. Wie viele Boote werden ganz voll – und wie viele Kinder bleiben übrig?', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r }; },
+    return { kind:'rest', em:'🚣', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r, text:{
+      de:n + ' Kinder machen einen Bootsausflug. In jedes Boot passen ' + k + ' Kinder. Wie viele Boote werden ganz voll – und wie viele Kinder bleiben übrig?',
+      es:n + ' niños hacen una excursión en barca. En cada barca caben ' + k + ' niños. ¿Cuántas barcas se llenan del todo y cuántos niños sobran?',
+      fa:F(n) + ' بچه به قایق‌سواری می‌روند. در هر قایق ' + F(k) + ' بچه جا می‌شود. چند قایق کاملاً پر می‌شود و چند بچه باقی می‌ماند؟' } }; },
   () => { const p = who(), k = ri(3, 9), q = ri(3, 10), r = ri(1, k - 1), n = k * q + r;
-    return { kind:'rest', em:'🃏', text:p.n + ' verteilt ' + n + ' Karten gerecht an ' + k + ' Spieler. Wie viele Karten bekommt jeder – und wie viele bleiben im Stapel?', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r }; },
+    return { kind:'rest', em:'🃏', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r, text:{
+      de:p.n + ' verteilt ' + n + ' Karten gerecht an ' + k + ' Spieler. Wie viele Karten bekommt jeder – und wie viele bleiben im Stapel?',
+      es:p.n + ' reparte ' + n + ' cartas por igual entre ' + k + ' jugadores. ¿Cuántas cartas recibe cada uno y cuántas quedan en el montón?',
+      fa:p.fa + ' ' + F(n) + ' کارت را به طور مساوی بین ' + F(k) + ' بازیکن پخش می‌کند. به هر نفر چند کارت می‌رسد و چند کارت در دسته باقی می‌ماند؟' } }; },
   // division
   () => { const p = who(), k = ri(2, 9), q = ri(2, 10), n = k * q;
-    return { kind:'div', em:'🌟', text:p.n + ' hat ' + n + ' Sticker und verteilt sie gerecht an ' + k + ' Freunde. Wie viele Sticker bekommt jeder?', right:q, short:n + ' ÷ ' + k + ' = ' + q }; },
+    return { kind:'div', em:'🌟', right:q, short:n + ' ÷ ' + k + ' = ' + q, text:{
+      de:p.n + ' hat ' + n + ' Sticker und verteilt sie gerecht an ' + k + ' Freunde. Wie viele Sticker bekommt jeder?',
+      es:p.n + ' tiene ' + n + ' pegatinas y las reparte por igual entre ' + k + ' amigos. ¿Cuántas pegatinas recibe cada uno?',
+      fa:p.fa + ' ' + F(n) + ' برچسب دارد و آن‌ها را به طور مساوی بین ' + F(k) + ' دوستش تقسیم می‌کند. به هر نفر چند برچسب می‌رسد؟' } }; },
   () => { const s = pickOne([4, 6, 8]); let k, q; do { k = ri(2, 8); q = ri(2, 6); } while ((k * q) % s !== 0);
     const pz = k * q / s;
-    return { kind:'div', em:'🍕', text:k + ' Freunde teilen sich ' + pz + (pz === 1 ? ' Pizza' : ' Pizzen') + '. Jede Pizza hat ' + s + ' Stücke. Wie viele Stücke bekommt jeder?', right:q, short:pz + ' × ' + s + ' = ' + (k * q) + ',  ' + (k * q) + ' ÷ ' + k + ' = ' + q, hard:true }; },
+    return { kind:'div', em:'🍕', right:q, hard:true, short:pz + ' × ' + s + ' = ' + (k * q) + ',  ' + (k * q) + ' ÷ ' + k + ' = ' + q, text:{
+      de:k + ' Freunde teilen sich ' + pz + (pz === 1 ? ' Pizza' : ' Pizzen') + '. Jede Pizza hat ' + s + ' Stücke. Wie viele Stücke bekommt jeder?',
+      es:k + ' amigos comparten ' + pz + (pz === 1 ? ' pizza' : ' pizzas') + '. Cada pizza tiene ' + s + ' trozos. ¿Cuántos trozos recibe cada uno?',
+      fa:F(k) + ' دوست ' + F(pz) + ' پیتزا را با هم تقسیم می‌کنند. هر پیتزا ' + F(s) + ' تکه دارد. به هر نفر چند تکه می‌رسد؟' } }; },
   // multiplication
   () => { const r = ri(4, 10), c = ri(2, 6);
-    return { kind:'mul', em:'🚌', text:'Im Bus gibt es ' + r + ' Reihen mit je ' + c + ' Plätzen. Wie viele Kinder können mitfahren?', right:r * c, short:r + ' × ' + c + ' = ' + (r * c) }; },
-  () => { const [an, legs, em] = pickOne([['Spinnen', 8, '🕷️'], ['Käfer', 6, '🐞'], ['Katzen', 4, '🐈'], ['Vögel', 2, '🐦']]), k = ri(3, 10);
-    return { kind:'mul', em, text:'Wie viele Beine haben ' + k + ' ' + an + ' zusammen?', right:k * legs, short:k + ' × ' + legs + ' = ' + (k * legs) }; },
+    return { kind:'mul', em:'🚌', right:r * c, short:r + ' × ' + c + ' = ' + (r * c), text:{
+      de:'Im Bus gibt es ' + r + ' Reihen mit je ' + c + ' Plätzen. Wie viele Kinder können mitfahren?',
+      es:'En el autobús hay ' + r + ' filas con ' + c + ' asientos cada una. ¿Cuántos niños pueden viajar?',
+      fa:'اتوبوس ' + F(r) + ' ردیف دارد و هر ردیف ' + F(c) + ' صندلی. چند بچه می‌توانند سوار شوند؟' } }; },
+  () => { const [de, es, fa, legs, em] = pickOne([['Spinnen', 'arañas', 'عنکبوت', 8, '🕷️'], ['Käfer', 'escarabajos', 'سوسک', 6, '🐞'], ['Katzen', 'gatos', 'گربه', 4, '🐈'], ['Vögel', 'pájaros', 'پرنده', 2, '🐦']]), k = ri(3, 10);
+    return { kind:'mul', em, right:k * legs, short:k + ' × ' + legs + ' = ' + (k * legs), text:{
+      de:'Wie viele Beine haben ' + k + ' ' + de + ' zusammen?',
+      es:'¿Cuántas patas tienen ' + k + ' ' + es + ' en total?',
+      fa:F(k) + ' ' + fa + ' روی هم چند پا دارند؟' } }; },
   () => { const p = who(), w = ri(2, 9), e = ri(3, 10);
-    return { kind:'mul', em:'💶', text:p.n + ' bekommt jede Woche ' + e + ' € Taschengeld. Wie viel Geld hat ' + p.er + ' nach ' + w + ' Wochen?', right:w * e, short:w + ' × ' + e + ' = ' + (w * e) }; },
+    return { kind:'mul', em:'💶', right:w * e, short:w + ' × ' + e + ' = ' + (w * e), text:{
+      de:p.n + ' bekommt jede Woche ' + e + ' € Taschengeld. Wie viel Geld hat ' + p.er + ' nach ' + w + ' Wochen?',
+      es:p.n + ' recibe ' + e + ' € de paga cada semana. ¿Cuánto dinero tiene después de ' + w + ' semanas?',
+      fa:p.fa + ' هر هفته ' + F(e) + ' یورو پول توجیبی می‌گیرد. بعد از ' + F(w) + ' هفته چقدر پول دارد؟' } }; },
   // addition
   () => { const p = who(), a = ri(15, 65), b = ri(8, 40);
-    return { kind:'add', em:'🔮', text:p.n + ' hat ' + a + ' Murmeln. Zum Geburtstag bekommt ' + p.er + ' ' + b + ' dazu. Wie viele Murmeln hat ' + p.n + ' jetzt?', right:a + b, short:a + ' + ' + b + ' = ' + (a + b) }; },
+    return { kind:'add', em:'🔮', right:a + b, short:a + ' + ' + b + ' = ' + (a + b), text:{
+      de:p.n + ' hat ' + a + ' Murmeln. Zum Geburtstag bekommt ' + p.er + ' ' + b + ' dazu. Wie viele Murmeln hat ' + p.n + ' jetzt?',
+      es:p.n + ' tiene ' + a + ' canicas. Por su cumpleaños le regalan ' + b + ' más. ¿Cuántas canicas tiene ahora?',
+      fa:p.fa + ' ' + F(a) + ' تیله دارد. برای تولدش ' + F(b) + ' تیلهٔ دیگر هدیه می‌گیرد. حالا چند تیله دارد؟' } }; },
   () => { const a = ri(25, 90), b = ri(25, 90);
-    return { kind:'add', em:'📚', text:'In der Bücherei stehen ' + a + ' Bücher im ersten Regal und ' + b + ' im zweiten. Wie viele Bücher sind es zusammen?', right:a + b, short:a + ' + ' + b + ' = ' + (a + b) }; },
+    return { kind:'add', em:'📚', right:a + b, short:a + ' + ' + b + ' = ' + (a + b), text:{
+      de:'In der Bücherei stehen ' + a + ' Bücher im ersten Regal und ' + b + ' im zweiten. Wie viele Bücher sind es zusammen?',
+      es:'En la biblioteca hay ' + a + ' libros en la primera estantería y ' + b + ' en la segunda. ¿Cuántos libros hay en total?',
+      fa:'در کتابخانه ' + F(a) + ' کتاب در قفسهٔ اول و ' + F(b) + ' کتاب در قفسهٔ دوم است. روی هم چند کتاب است؟' } }; },
   // subtraction
   () => { const a = ri(20, 60), b = ri(5, a - 5);
-    return { kind:'sub', em:'🚍', text:'Im Bus sitzen ' + a + ' Kinder. An der Haltestelle steigen ' + b + ' aus. Wie viele Kinder sitzen noch im Bus?', right:a - b, short:a + ' − ' + b + ' = ' + (a - b) }; },
+    return { kind:'sub', em:'🚍', right:a - b, short:a + ' − ' + b + ' = ' + (a - b), text:{
+      de:'Im Bus sitzen ' + a + ' Kinder. An der Haltestelle steigen ' + b + ' aus. Wie viele Kinder sitzen noch im Bus?',
+      es:'En el autobús van ' + a + ' niños. En la parada se bajan ' + b + '. ¿Cuántos niños quedan en el autobús?',
+      fa:'در اتوبوس ' + F(a) + ' بچه نشسته‌اند. در ایستگاه ' + F(b) + ' نفر پیاده می‌شوند. چند بچه هنوز در اتوبوس هستند؟' } }; },
   () => { const p = who(), a = ri(30, 100), b = ri(9, a - 5);
-    return { kind:'sub', em:'📕', text:p.n + ' hat ' + a + ' €. Ein Buch kostet ' + b + ' €. Wie viel Geld hat ' + p.er + ' danach noch?', right:a - b, short:a + ' − ' + b + ' = ' + (a - b) }; },
+    return { kind:'sub', em:'📕', right:a - b, short:a + ' − ' + b + ' = ' + (a - b), text:{
+      de:p.n + ' hat ' + a + ' €. Ein Buch kostet ' + b + ' €. Wie viel Geld hat ' + p.er + ' danach noch?',
+      es:p.n + ' tiene ' + a + ' €. Un libro cuesta ' + b + ' €. ¿Cuánto dinero le queda después?',
+      fa:p.fa + ' ' + F(a) + ' یورو دارد. یک کتاب ' + F(b) + ' یورو قیمت دارد. بعد از خرید چقدر پول برایش می‌ماند؟' } }; },
   // two-step puzzles
   () => { const p = who(), a = ri(3, 8), b = ri(4, 10), c = ri(2, a * b - 3);
-    return { kind:'mix', em:'✏️', text:p.n + ' kauft ' + a + ' Packungen Stifte mit je ' + b + ' Stiften. Dann verschenkt ' + p.er + ' ' + c + ' Stifte. Wie viele Stifte hat ' + p.n + ' noch?', right:a * b - c, short:a + ' × ' + b + ' = ' + (a * b) + ',  ' + (a * b) + ' − ' + c + ' = ' + (a * b - c), hard:true }; },
+    return { kind:'mix', em:'✏️', right:a * b - c, hard:true, short:a + ' × ' + b + ' = ' + (a * b) + ',  ' + (a * b) + ' − ' + c + ' = ' + (a * b - c), text:{
+      de:p.n + ' kauft ' + a + ' Packungen Stifte mit je ' + b + ' Stiften. Dann verschenkt ' + p.er + ' ' + c + ' Stifte. Wie viele Stifte hat ' + p.n + ' noch?',
+      es:p.n + ' compra ' + a + ' paquetes de lápices con ' + b + ' lápices cada uno. Luego regala ' + c + ' lápices. ¿Cuántos lápices le quedan?',
+      fa:p.fa + ' ' + F(a) + ' بسته مداد می‌خرد که در هر بسته ' + F(b) + ' مداد است. بعد ' + F(c) + ' مداد را هدیه می‌دهد. چند مداد برایش می‌ماند؟' } }; },
   () => { const a = ri(3, 7), b = ri(3, 9), c = ri(2, a * b - 2);
-    return { kind:'mix', em:'🐒', text:'Im Zoo gibt es ' + a + ' Gehege mit je ' + b + ' Affen. ' + c + ' Affen schlafen. Wie viele Affen sind wach?', right:a * b - c, short:a + ' × ' + b + ' = ' + (a * b) + ',  ' + (a * b) + ' − ' + c + ' = ' + (a * b - c), hard:true }; },
+    return { kind:'mix', em:'🐒', right:a * b - c, hard:true, short:a + ' × ' + b + ' = ' + (a * b) + ',  ' + (a * b) + ' − ' + c + ' = ' + (a * b - c), text:{
+      de:'Im Zoo gibt es ' + a + ' Gehege mit je ' + b + ' Affen. ' + c + ' Affen schlafen. Wie viele Affen sind wach?',
+      es:'En el zoo hay ' + a + ' recintos con ' + b + ' monos cada uno. ' + c + ' monos están durmiendo. ¿Cuántos monos están despiertos?',
+      fa:'در باغ وحش ' + F(a) + ' قفس هست و در هر قفس ' + F(b) + ' میمون. ' + F(c) + ' میمون خواب هستند. چند میمون بیدارند؟' } }; },
   () => { const h = ri(3, 12), k = ri(2, 8);
-    return { kind:'mix', em:'🐔🐄', text:'Auf dem Bauernhof leben ' + h + ' Hühner und ' + k + ' Kühe. Wie viele Beine haben alle Tiere zusammen?', right:h * 2 + k * 4, short:h + ' × 2 = ' + (h * 2) + ',  ' + k + ' × 4 = ' + (k * 4) + ',  zusammen ' + (h * 2 + k * 4), hard:true }; },
+    return { kind:'mix', em:'🐔🐄', right:h * 2 + k * 4, hard:true, short:h + ' × 2 = ' + (h * 2) + ',  ' + k + ' × 4 = ' + (k * 4) + ',  ' + (h * 2) + ' + ' + (k * 4) + ' = ' + (h * 2 + k * 4), text:{
+      de:'Auf dem Bauernhof leben ' + h + ' Hühner und ' + k + ' Kühe. Wie viele Beine haben alle Tiere zusammen?',
+      es:'En la granja viven ' + h + ' gallinas y ' + k + ' vacas. ¿Cuántas patas tienen todos los animales juntos?',
+      fa:'در مزرعه ' + F(h) + ' مرغ و ' + F(k) + ' گاو زندگی می‌کنند. همهٔ حیوان‌ها روی هم چند پا دارند؟' } }; },
   () => { const k = ri(2, 6), q = ri(3, 8), c = ri(2, 6), n = k * q + c;
-    return { kind:'mix', em:'🍎', text:'Mama kauft ' + n + ' Äpfel. ' + c + ' behält sie für sich, den Rest verteilt sie gerecht an ' + k + ' Kinder. Wie viele Äpfel bekommt jedes Kind?', right:q, short:n + ' − ' + c + ' = ' + (k * q) + ',  ' + (k * q) + ' ÷ ' + k + ' = ' + q, hard:true }; },
+    return { kind:'mix', em:'🍎', right:q, hard:true, short:n + ' − ' + c + ' = ' + (k * q) + ',  ' + (k * q) + ' ÷ ' + k + ' = ' + q, text:{
+      de:'Mama kauft ' + n + ' Äpfel. ' + c + ' behält sie für sich, den Rest verteilt sie gerecht an ' + k + ' Kinder. Wie viele Äpfel bekommt jedes Kind?',
+      es:'Mamá compra ' + n + ' manzanas. Se queda ' + c + ' para ella y reparte el resto por igual entre ' + k + ' niños. ¿Cuántas manzanas recibe cada niño?',
+      fa:'مامان ' + F(n) + ' سیب می‌خرد. ' + F(c) + ' سیب را برای خودش نگه می‌دارد و بقیه را به طور مساوی بین ' + F(k) + ' بچه تقسیم می‌کند. به هر بچه چند سیب می‌رسد؟' } }; },
   () => { let a, b, k, r; do { a = ri(2, 4); b = ri(6, 12); k = pickOne([4, 5, 6]); r = (a * b) % k; } while (r === 0);
     const t = a * b;
-    return { kind:'mixrest', em:'🍪', text:'Es werden ' + a + ' Bleche mit je ' + b + ' Keksen gebacken. Die Kekse kommen in Tüten zu je ' + k + '. Wie viele Tüten werden voll – und wie viele Kekse bleiben übrig?', right:Math.floor(t / k), rest:r, short:a + ' × ' + b + ' = ' + t + ',  ' + t + ' ÷ ' + k + ' = ' + Math.floor(t / k) + ' Rest ' + r, hard:true }; },
+    return { kind:'mixrest', em:'🍪', right:Math.floor(t / k), rest:r, hard:true, short:a + ' × ' + b + ' = ' + t + ',  ' + t + ' ÷ ' + k + ' = ' + Math.floor(t / k) + ' Rest ' + r, text:{
+      de:'Es werden ' + a + ' Bleche mit je ' + b + ' Keksen gebacken. Die Kekse kommen in Tüten zu je ' + k + '. Wie viele Tüten werden voll – und wie viele Kekse bleiben übrig?',
+      es:'Se hornean ' + a + ' bandejas con ' + b + ' galletas cada una. Las galletas van en bolsas de ' + k + '. ¿Cuántas bolsas se llenan y cuántas galletas sobran?',
+      fa:F(a) + ' سینی شیرینی پخته می‌شود و در هر سینی ' + F(b) + ' شیرینی است. شیرینی‌ها در کیسه‌های ' + F(k) + ' تایی گذاشته می‌شوند. چند کیسه پر می‌شود و چند شیرینی باقی می‌ماند؟' } }; },
   () => { const g = ri(8, 15), j = ri(8, 15), f = ri(2, 6);
-    return { kind:'mix', em:'🏫', text:'In der Klasse sind ' + g + ' Mädchen und ' + j + ' Jungen. Heute fehlen ' + f + ' Kinder. Wie viele Kinder sind da?', right:g + j - f, short:g + ' + ' + j + ' = ' + (g + j) + ',  ' + (g + j) + ' − ' + f + ' = ' + (g + j - f), hard:true }; },
+    return { kind:'mix', em:'🏫', right:g + j - f, hard:true, short:g + ' + ' + j + ' = ' + (g + j) + ',  ' + (g + j) + ' − ' + f + ' = ' + (g + j - f), text:{
+      de:'In der Klasse sind ' + g + ' Mädchen und ' + j + ' Jungen. Heute fehlen ' + f + ' Kinder. Wie viele Kinder sind da?',
+      es:'En la clase hay ' + g + ' niñas y ' + j + ' niños. Hoy faltan ' + f + '. ¿Cuántos niños hay en clase?',
+      fa:'در کلاس ' + F(g) + ' دختر و ' + F(j) + ' پسر هست. امروز ' + F(f) + ' نفر غایب‌اند. چند بچه سر کلاس هستند؟' } }; },
 ];
 function makeWord() { return pickOne(WORD)(); }
 
@@ -466,7 +577,7 @@ function nextQuestion() {
   const flip = Math.random() < .5 && f.b <= 10 && f.a !== f.b;   // sometimes 8 × 7 instead of 7 × 8, or 56 ÷ 8 instead of 56 ÷ 7
   if (f.op === 'w') {
     const pr = f.prob || makeWord();
-    S.cur = { a:0, b:0, op:'w', prob:pr, kind:pr.kind, text:pr.text, right:pr.right, rest:pr.rest, twoBox:pr.rest !== undefined, short:pr.short, shown:Date.now() };
+    S.cur = { a:0, b:0, op:'w', prob:pr, kind:pr.kind, text:pr.text.de, right:pr.right, rest:pr.rest, twoBox:pr.rest !== undefined, short:pr.short, shown:Date.now() };
   } else if (f.op === 'r') {
     const rest = 1 + Math.floor(Math.random() * (f.a - 1));
     S.cur = { a:f.a, b:f.b, op:'r', text:(f.a * f.b + rest) + ' ÷ ' + f.a, right:f.b, rest, twoBox:true, shown:Date.now() };
@@ -479,7 +590,8 @@ function nextQuestion() {
   S.typed = ''; S.typedR = ''; S.field = 'q'; S.locked = false;
   if (S.cur.op === 'w') {
     $('q').className = 'q word';
-    $('q').innerHTML = '<span class="em">' + S.cur.prob.em + '</span>' + (S.cur.prob.hard ? '<span class="hard">🧠 Knobelaufgabe</span><br>' : '') + S.cur.text;
+    const pt = S.cur.prob.text;
+    $('q').innerHTML = '<span class="em">' + S.cur.prob.em + '</span>' + (S.cur.prob.hard ? '<span class="hard">🧠 Knobelaufgabe' + (help ? ' · ' + trSpan(help === 'es' ? 'reto' : 'معما') : '') + '</span><br>' : '') + hl(pt.de, pt.es, pt.fa);
   } else { $('q').className = 'q'; $('q').textContent = S.cur.text; }
   showAns('');
   $('fb').textContent = S.timeUp ? 'Letzte Aufgabe!' : ''; $('fb').className = 'fb';
@@ -525,7 +637,8 @@ function submit() {
     S.ok++; S.streak++; S.best = Math.max(S.best, S.streak); S.stars += S.streak >= 5 ? 2 : 1;
     showAns('ok');
     const special = S.streak > 0 && S.streak % 5 === 0;
-    $('fb').textContent = special ? '🔥 ' + S.streak + ' richtig hintereinander!' : PRAISE[Math.floor(Math.random() * PRAISE.length)];
+    const pr = PRAISE[Math.floor(Math.random() * PRAISE.length)];
+    $('fb').innerHTML = special ? hl('🔥 ' + S.streak + ' richtig hintereinander!', '🔥 ¡' + S.streak + ' seguidas correctas!', '🔥 ' + FD(S.streak) + ' تا درست پشت سر هم!') : hl(pr[0], pr[1], pr[2]);
     $('fb').className = 'fb ok';
     sfx(special ? 'streak' : 'ok');
     stats[k] = st; save('emStats', stats); hud();
@@ -537,7 +650,10 @@ function submit() {
     if (!S.wrong.some(w => w.text === wtext)) S.wrong.push({ k, text:wtext });
     S.retry.push({ f:op === 'w' ? { op, prob:S.cur.prob } : { a, b, op }, due:S.asked + 3 });
     showAns('no', String(right), S.cur.twoBox ? String(S.cur.rest) : undefined);
-    $('fb').textContent = op === 'w' ? 'Fast! So geht es: ' + S.cur.short : 'Fast! ' + S.cur.text + ' = ' + rightText;
+    const sol = op === 'w' ? S.cur.short : S.cur.text + ' = ' + rightText;
+    $('fb').innerHTML = op === 'w'
+      ? hl('Fast! So geht es: ' + sol, '¡Casi! Se hace así: ' + sol.replace(/ Rest /g, ' resto '), 'نزدیک بود! راه حل: ' + sol.replace(/ Rest /g, ' باقی‌مانده '))
+      : hl('Fast! ' + sol, '¡Casi! ' + sol.replace(/ Rest /g, ' resto '), 'نزدیک بود! ' + sol.replace(/ Rest /g, ' باقی‌مانده '));
     $('fb').className = 'fb no';
     sfx('no');
     stats[k] = st; save('emStats', stats); hud();
@@ -572,8 +688,11 @@ function endSession() {
   const pct = S.asked ? Math.round(100 * S.ok / S.asked) : 0;
   $('rAsked').textContent = S.asked; $('rPct').textContent = pct + '%'; $('rBest').textContent = S.best; $('rStars').textContent = S.stars;
   $('trophy').textContent = pct >= 90 ? '🏆' : pct >= 70 ? '🥇' : '💪';
-  $('resTitle').textContent = pct >= 90 ? 'Wow, super!' : pct >= 70 ? 'Super trainiert!' : 'Gut gemacht!';
-  $('resSub').textContent = days.includes(todayStr()) ? '🔥 ' + streakDays() + (streakDays() === 1 ? ' Tag' : ' Tage') + ' in Folge! Morgen geht es weiter.' : 'Morgen wieder 10 Minuten, dann wächst deine Serie.';
+  $('resTitle').innerHTML = pct >= 90 ? hl('Wow, super!', '¡Guau, genial!', 'وای، عالی!') : pct >= 70 ? hl('Super trainiert!', '¡Muy buen entrenamiento!', 'خیلی خوب تمرین کردی!') : hl('Gut gemacht!', '¡Bien hecho!', 'آفرین!');
+  const sd = streakDays();
+  $('resSub').innerHTML = days.includes(todayStr())
+    ? hl('🔥 ' + sd + (sd === 1 ? ' Tag' : ' Tage') + ' in Folge! Morgen geht es weiter.', '🔥 ¡' + sd + (sd === 1 ? ' día' : ' días') + ' seguidos! Mañana seguimos.', '🔥 ' + FD(sd) + ' روز پشت سر هم! فردا ادامه می‌دهیم.')
+    : hl('Morgen wieder 10 Minuten, dann wächst deine Serie.', 'Mañana otros 10 minutos y tu racha crecerá.', 'فردا دوباره ۱۰ دقیقه، تا رکوردت بیشتر شود.');
   $('againCard').hidden = S.wrong.length === 0;
   $('again').innerHTML = S.wrong.map(w => '<span>' + w.text + '</span>').join('');
   S = null;
@@ -621,11 +740,13 @@ $('resumeBtn').onclick = resume;
 let stopArmed = null;
 $('stopBtn').onclick = () => {
   const b = $('stopBtn');
-  if (!stopArmed) { b.textContent = 'Wirklich?'; stopArmed = setTimeout(() => { stopArmed = null; b.textContent = 'Beenden'; }, 3000); return; }
-  clearTimeout(stopArmed); stopArmed = null; b.textContent = 'Beenden';
+  if (!stopArmed) { b.innerHTML = hl('Wirklich?', '¿Seguro?', 'مطمئنی؟'); stopArmed = setTimeout(() => { stopArmed = null; b.innerHTML = hl('Beenden', 'terminar', 'پایان'); }, 3000); return; }
+  clearTimeout(stopArmed); stopArmed = null; b.innerHTML = hl('Beenden', 'terminar', 'پایان');
   endSession();
 };
 $('doneBtn').onclick = () => { renderHome(); show('home'); };
+$('helpBtn').onclick = () => { help = help === '' ? 'es' : help === 'es' ? 'fa' : ''; save('emHelp', help); renderHome(); $('stopBtn').innerHTML = hl('Beenden', 'terminar', 'پایان'); };
+$('stopBtn').innerHTML = hl('Beenden', 'terminar', 'پایان');
 $('soundBtn').onclick = () => { soundOn = !soundOn; save('emSound', soundOn); unlockAudio(); renderHome(); if (soundOn) sfx('ok'); };
 
 renderHome();
