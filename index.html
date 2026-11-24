@@ -53,7 +53,22 @@ body{
 }
 .panel{display:contents}
 .top{order:1; width:100%; max-width:560px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap}
-.modes{order:2; width:100%; max-width:560px; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px}
+.modes{order:2; width:100%; max-width:560px; display:grid; grid-template-columns:repeat(5, 1fr); gap:5px}
+.setter[hidden]{display:none}
+.setter{order:2; width:100%; max-width:560px; box-sizing:border-box; background:var(--card); border-radius:18px; padding:8px 10px; display:flex; flex-direction:column; gap:8px; box-shadow:0 3px 0 rgba(0,0,0,.08)}
+.setter .line{display:flex; align-items:center; justify-content:center; gap:14px}
+.setter .pm{width:52px; height:52px; border-radius:50%; background:var(--housing); color:#fff; font-size:30px; font-weight:800; line-height:1}
+.setter .val{min-width:4.5ch; text-align:center; font-size:30px; font-weight:800; font-variant-numeric:tabular-nums}
+.setter .quick{display:flex; flex-wrap:wrap; gap:5px; justify-content:center}
+.setter .quick button{background:var(--bg1); border-radius:999px; padding:4px 11px 2px; font-size:16px; font-weight:700}
+.setter .quick button[aria-pressed="true"]{background:var(--accent); color:#fff}
+@media (max-width:600px){
+  .setter{padding:6px 8px; gap:6px}
+  .setter .pm{width:40px; height:40px; font-size:24px}
+  .setter .val{font-size:24px}
+  .setter .quick{flex-wrap:nowrap; overflow-x:auto; justify-content:flex-start; padding-bottom:2px; -webkit-overflow-scrolling:touch}
+  .setter .quick button{flex:0 0 auto}
+}
 .stage{order:3; display:flex; flex-direction:column; align-items:center}
 .status{order:4; margin:0; font-size:clamp(17px, 4.4vw, 26px); font-weight:700; text-align:center; min-height:1.3em; text-wrap:balance; max-width:560px}
 .time{order:5; font-size:clamp(50px, 14vw, 112px); font-weight:800; line-height:.95; font-variant-numeric:tabular-nums; letter-spacing:.02em}
@@ -350,6 +365,15 @@ button:disabled{opacity:.4; cursor:default}
     <div class="bday" id="bday" hidden></div>
     <div class="modes" id="modes" role="tablist" aria-label="Timer"></div>
 
+    <div class="setter" id="setter" hidden>
+      <div class="line">
+        <button type="button" class="pm" id="ownMinus" aria-label="Eine Minute weniger">−</button>
+        <span class="val" id="ownVal">10 Min</span>
+        <button type="button" class="pm" id="ownPlus" aria-label="Eine Minute mehr">+</button>
+      </div>
+      <div class="quick" id="ownQuick"></div>
+    </div>
+
     <p class="status" id="status" aria-live="polite"></p>
     <div class="time" id="time">20:00</div>
 
@@ -483,8 +507,14 @@ const MODES = {
           ready:'Kleidung ausziehen und falten! 👕',
           g:'Grün: Ausziehen und schön falten 👕', a:'Gelb: Weiter falten, die Zeit wird knapp', r:'Rot: Schnell fertig falten! 🧺',
           done:'Alles gefaltet! ✨', title:'Super! Alles ordentlich gefaltet!' },
+  own:  { min:10, em:'⏱️', lbl:'Eigener',  star:false, next:null, party:'⏰ 🎉',
+          ready:'Eigener Timer: Minuten wählen und los! ⏱️',
+          g:'Grün: Noch viel Zeit 😊', a:'Gelb: Die Zeit wird knapp', r:'Rot: Gleich ist die Zeit um!',
+          done:'Zeit ist um! ⏰', title:'Zeit ist um!' },
 };
-const ORDER = ['hw', 'br', 'eat', 'fold'];
+// the own timer remembers the last minutes chosen on this device
+try { const om = parseInt(localStorage.getItem('ampelOwnMin'), 10); if (om >= 1 && om <= 120) MODES.own.min = om; } catch (_) {}
+const ORDER = ['hw', 'br', 'eat', 'fold', 'own'];
 const timers = {};
 ORDER.forEach(k => { const ms = MODES[k].min * 60000; timers[k] = { total:ms, remaining:ms, endAt:0, running:false, done:false }; });
 
@@ -636,6 +666,12 @@ function render() {
     b.disabled = anyRunning && k !== mode;
   });
   $('teamCount').textContent = stars;
+  // own timer: minutes can be changed while it is not running
+  const own = timers.own;
+  $('setter').hidden = !(mode === 'own' && !own.running && (own.done || own.remaining >= own.total));
+  $('ownVal').textContent = MODES.own.min + ' Min';
+  $('m-own').querySelector('small').textContent = MODES.own.min + ' Min';
+  document.querySelectorAll('#ownQuick button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.min === MODES.own.min)));
   lastZone = z;
 }
 
@@ -886,7 +922,7 @@ function showParty(which) {
   $('partyTitle').textContent = m.title;
   $('partySub').textContent = m.star
     ? 'Ein Stern für euch beide ⭐ Zusammen habt ihr jetzt ' + stars + '!'
-    : 'Zurück an die Aufgaben. Ihr schafft das!';
+    : which === 'br' ? 'Zurück an die Aufgaben. Ihr schafft das!' : 'Gut gemacht! 🎉';
   const nb = $('partyNext');
   if (m.next) {
     const n = MODES[m.next];
@@ -906,6 +942,20 @@ $('partyClose').onclick = () => { $('party').hidden = true; };
 $('go').onclick = () => { timers[mode].running ? pause() : start(); };
 ORDER.forEach(k => { $('m-' + k).onclick = () => switchMode(k); });
 $('themeBtn').onclick = () => { randomTheme(); render(); };
+// ---------- own timer ----------
+function setOwn(min) {
+  min = Math.max(1, Math.min(120, min));
+  MODES.own.min = min;
+  const t = timers.own;
+  t.total = t.remaining = min * 60000; t.done = false; t.running = false;
+  try { localStorage.setItem('ampelOwnMin', String(min)); } catch (_) {}
+  lastZone = null; render();
+}
+$('ownQuick').innerHTML = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60].map(m => '<button type="button" data-min="' + m + '">' + m + '</button>').join('');
+$('ownQuick').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setOwn(+b.dataset.min); });
+$('ownMinus').onclick = () => setOwn(MODES.own.min - 1);
+$('ownPlus').onclick = () => setOwn(MODES.own.min + 1);
+
 // "Neu" needs two taps, so a child cannot restart the timer by accident.
 $('reset').onclick = () => {
   const b = $('reset');
