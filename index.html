@@ -10,7 +10,7 @@
 </head>
 <body>
 <title>Ampel-Abenteuer</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Vazirmatn:wght@500;700;800&display=swap">
 <style>
 /* Layout: one screen. Portrait: who/theme, four timer tabs, the timer picture, status, time, racer track, big button.
    Landscape (iPad/iPhone sideways): the picture on the left, everything else on the right.
@@ -25,7 +25,7 @@
   --zone:#3ddc84;
   --glow:rgba(61,220,132,0);
   --lamp:min(9vh, 22vw);
-  --font:'Baloo 2', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif;
+  --font:'Baloo 2', 'Vazirmatn', ui-rounded, 'SF Pro Rounded', system-ui, -apple-system, sans-serif;
   color-scheme:light;
 }
 @supports (height:1dvh){ :root{ --lamp:min(9dvh, 22vw); } }
@@ -221,7 +221,7 @@ button:disabled{opacity:.4; cursor:default}
   padding-left:max(16px, env(safe-area-inset-left, 0px));
   padding-right:max(16px, env(safe-area-inset-right, 0px));
 }
-.party-box{background:#fff; border-radius:28px; padding:24px 22px 20px; width:100%; max-width:420px; text-align:center; box-shadow:0 12px 0 rgba(0,0,0,.15)}
+.party-box{box-sizing:border-box; background:#fff; border-radius:28px; padding:24px 22px 20px; width:100%; max-width:420px; text-align:center; box-shadow:0 12px 0 rgba(0,0,0,.15)}
 .party-emoji{font-size:72px; line-height:1}
 .party-title{margin:8px 0 2px; font-size:30px; font-weight:800; line-height:1.1; text-wrap:balance}
 .party-sub{margin:0 0 16px; font-size:19px; color:var(--muted)}
@@ -357,7 +357,8 @@ button:disabled{opacity:.4; cursor:default}
 
   <div class="panel">
     <div class="top">
-      <div class="chip team" id="team" aria-live="polite">⭐ Unsere Sterne: <span id="teamCount">0</span></div>
+      <div class="chip team" id="team" aria-live="polite">⭐ <span id="teamLbl">Unsere Sterne</span>: <span id="teamCount">0</span></div>
+      <button type="button" class="chip" id="langBtn" aria-label="Sprache">🌐 Deutsch</button>
       <button type="button" class="chip" id="soundBtn" aria-label="Ton an oder aus">🔊</button>
       <button type="button" class="chip" id="themeBtn" aria-label="Anderes Thema">🎲 <span id="themeName"></span></button>
     </div>
@@ -518,6 +519,83 @@ const ORDER = ['hw', 'br', 'eat', 'fold', 'own'];
 const timers = {};
 ORDER.forEach(k => { const ms = MODES[k].min * 60000; timers[k] = { total:ms, remaining:ms, endAt:0, running:false, done:false }; });
 
+// ---------- languages: Deutsch (texts above), Español, فارسی ----------
+const LANGS = ['de', 'es', 'fa'];
+const LANG_NAME = { de:'Deutsch', es:'Español', fa:'فارسی' };
+const VOICE_LANG = { de:'de-DE', es:'es-ES', fa:'fa-IR' };
+let lang = 'de';
+try { const l = localStorage.getItem('ampelLang'); if (LANGS.indexOf(l) >= 0) lang = l; } catch (_) {}
+let bdayKids = [];
+const num = x => lang === 'fa' ? String(x).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]) : String(x);
+const MT = {
+  es: {
+    hw:   { lbl:'Tareas', ready:'¿Listos para los deberes? 📚', g:'Verde: Hay mucho tiempo 😊', a:'Amarillo: ¡Seguid así, queda poco tiempo!', r:'Rojo: ¡Último esfuerzo! 💪', done:'¡Deberes terminados! 🎉', title:'¡Genial! ¡Deberes terminados!' },
+    br:   { lbl:'Pausa', ready:'¿Listos para la pausa? 🧃', g:'¡Pausa! A relajarse 😌', a:'Amarillo: La pausa termina pronto', r:'Rojo: Enseguida seguimos', done:'¡Se acabó la pausa!', title:'¡Se acabó la pausa!' },
+    eat:  { lbl:'Comer', ready:'¡Que aproveche! 🍽️', g:'Verde: Comed con calma 😋', a:'Amarillo: Seguid comiendo, queda poco tiempo', r:'Rojo: ¡Los últimos bocados! 🥄', done:'¡Comida terminada! 🍽️', title:'¡Qué rico! ¡Comida terminada!' },
+    fold: { lbl:'Doblar', ready:'¡A quitarse la ropa y doblarla! 👕', g:'Verde: Quitaos la ropa y doblad bien 👕', a:'Amarillo: Seguid doblando, queda poco tiempo', r:'Rojo: ¡Rápido, terminad de doblar! 🧺', done:'¡Todo doblado! ✨', title:'¡Genial! ¡Todo bien doblado!' },
+    own:  { lbl:'Propio', ready:'Temporizador propio: ¡elige los minutos y adelante! ⏱️', g:'Verde: Hay mucho tiempo 😊', a:'Amarillo: Queda poco tiempo', r:'Rojo: ¡El tiempo casi se acaba!', done:'¡Se acabó el tiempo! ⏰', title:'¡Se acabó el tiempo!' },
+  },
+  fa: {
+    hw:   { lbl:'تکالیف', ready:'برای تکالیف آماده‌اید؟ 📚', g:'سبز: هنوز وقت زیاد است 😊', a:'زرد: آفرین، ادامه بدهید، وقت کم است', r:'قرمز: آخرین تلاش! 💪', done:'تکالیف تمام شد! 🎉', title:'عالی! تکالیف تمام شد!' },
+    br:   { lbl:'استراحت', ready:'برای استراحت آماده‌اید؟ 🧃', g:'استراحت! راحت باشید 😌', a:'زرد: استراحت به زودی تمام می‌شود', r:'قرمز: الان ادامه می‌دهیم', done:'استراحت تمام شد!', title:'استراحت تمام شد!' },
+    eat:  { lbl:'غذا', ready:'نوش جان! 🍽️', g:'سبز: با آرامش غذا بخورید 😋', a:'زرد: به خوردن ادامه بدهید، وقت کم است', r:'قرمز: لقمه‌های آخر! 🥄', done:'غذا تمام شد! 🍽️', title:'به‌به! غذا تمام شد!' },
+    fold: { lbl:'تا کردن', ready:'لباس‌ها را دربیاورید و تا کنید! 👕', g:'سبز: لباس‌ها را دربیاورید و مرتب تا کنید 👕', a:'زرد: به تا کردن ادامه بدهید، وقت کم است', r:'قرمز: زود تا کردن را تمام کنید! 🧺', done:'همه تا شد! ✨', title:'عالی! همه مرتب تا شد!' },
+    own:  { lbl:'دلخواه', ready:'تایمر دلخواه: دقیقه‌ها را انتخاب کنید و شروع کنید! ⏱️', g:'سبز: هنوز وقت زیاد است 😊', a:'زرد: وقت کم است', r:'قرمز: وقت تقریباً تمام است!', done:'وقت تمام شد! ⏰', title:'وقت تمام شد!' },
+  },
+};
+const mt = (k, field) => (lang !== 'de' && MT[lang][k] && MT[lang][k][field] !== undefined) ? MT[lang][k][field] : MODES[k][field];
+const UI = {
+  de: { stars:'Unsere Sterne', paused:'Angehalten ⏸', pause:'Pause ⏸', again:'Nochmal ▶', cont:'Weiter ▶', start:'Start ▶',
+        reset:'Neu', resetQ:'Nochmal?', close:'Schließen', min:'Min',
+        starSub:n => 'Ein Stern für euch beide ⭐ Zusammen habt ihr jetzt ' + n + '!',
+        backWork:'Zurück an die Aufgaben. Ihr schafft das!', wellDone:'Gut gemacht! 🎉',
+        startNext:(l, em, m) => l + ' starten ' + em + ' ' + m + ' Min', starSpeak:' Ein Stern für euch!',
+        bday:names => '🎂 Heute hat ' + names.join(' und ') + ' Geburtstag! 🎉',
+        birthday:n => 'Geburtstag ' + n, hbd:n => 'ALLES GUTE, ' + n.toUpperCase() + '!' },
+  es: { stars:'Nuestras estrellas', paused:'En pausa ⏸', pause:'Pausa ⏸', again:'Otra vez ▶', cont:'Seguir ▶', start:'Empezar ▶',
+        reset:'Nuevo', resetQ:'¿Seguro?', close:'Cerrar', min:'min',
+        starSub:n => 'Una estrella para los dos ⭐ ¡Juntos ya tenéis ' + n + '!',
+        backWork:'¡A las tareas otra vez! ¡Vosotros podéis!', wellDone:'¡Muy bien! 🎉',
+        startNext:(l, em, m) => 'Empezar ' + l + ' ' + em + ' ' + m + ' min', starSpeak:' ¡Una estrella para vosotros!',
+        bday:names => '🎂 ¡Hoy es el cumpleaños de ' + names.join(' y ') + '! 🎉',
+        birthday:n => 'Cumpleaños ' + n, hbd:n => '¡FELIZ CUMPLEAÑOS, ' + n.toUpperCase() + '!' },
+  fa: { stars:'ستاره‌های ما', paused:'متوقف شد ⏸', pause:'توقف ⏸', again:'دوباره ▶', cont:'ادامه ▶', start:'شروع ▶',
+        reset:'از نو', resetQ:'مطمئنی؟', close:'بستن', min:'دقیقه',
+        starSub:n => 'یک ستاره برای هر دوی شما ⭐ با هم ' + num(n) + ' ستاره دارید!',
+        backWork:'برگردیم سر تکالیف. شما می‌توانید!', wellDone:'آفرین! 🎉',
+        startNext:(l, em, m) => 'شروع ' + l + ' ' + em + ' ' + num(m) + ' دقیقه', starSpeak:' یک ستاره برای شما!',
+        bday:names => '🎂 امروز تولد ' + names.join(' و ') + ' است! 🎉',
+        birthday:n => 'تولد ' + n, hbd:n => 'تولدت مبارک، ' + n + '!' },
+};
+const ui = (k, a, b, c) => { const v = UI[lang][k]; return typeof v === 'function' ? v(a, b, c) : v; };
+const THEME_NAMES = {
+  es: { 'Rennstrecke':'Carrera', 'Weltraum':'Espacio', 'Dschungel':'Selva', 'Unterwasser':'Bajo el mar', 'Dinoland':'Dinolandia',
+        'Piratenschiff':'Barco pirata', 'Einhornland':'Unicornios', 'Fußballstadion':'Estadio', 'Zirkus':'Circo', 'Zauberlabor':'Laboratorio mágico',
+        'Halloween':'Halloween', 'Sankt Martin':'San Martín', 'Weihnachten':'Navidad', 'Silvester':'Nochevieja', 'Fasching':'Carnaval', 'Ostern':'Pascua' },
+  fa: { 'Rennstrecke':'مسابقه', 'Weltraum':'فضا', 'Dschungel':'جنگل', 'Unterwasser':'زیر دریا', 'Dinoland':'سرزمین دایناسورها',
+        'Piratenschiff':'کشتی دزدان دریایی', 'Einhornland':'سرزمین تک‌شاخ‌ها', 'Fußballstadion':'ورزشگاه فوتبال', 'Zirkus':'سیرک', 'Zauberlabor':'آزمایشگاه جادو',
+        'Halloween':'هالووین', 'Sankt Martin':'سنت مارتین', 'Weihnachten':'کریسمس', 'Silvester':'شب سال نو', 'Fasching':'کارناوال', 'Ostern':'عید پاک' },
+};
+function themeLabel(t) {
+  if (t.name.indexOf('Geburtstag ') === 0) return ui('birthday', t.name.slice(11));
+  return (THEME_NAMES[lang] || {})[t.name] || t.name;
+}
+const WORDS = {
+  es: { 'BRRRUMM!':'¡BRRRUM!', 'WUUUSCH!':'¡ZUUUM!', 'ROOOAAAR!':'¡ROOOAAAR!', 'SCHNAPP!':'¡ÑAM!', 'KRAAAKE!':'¡KRAKEN!', 'WIEHER! 🌈':'¡IIIIH! 🌈',
+        'TOOOOR!':'¡GOOOOL!', 'TÖRÖÖÖ!':'¡TURURÚ!', 'FAUCH!':'¡FSSSH!', 'GESCHAFFT!':'¡LO LOGRASTEIS!', 'BUUUUH!':'¡BUUUUH!', 'MUAHAHA!':'¡MUAJAJA!',
+        'HEX HEX!':'¡ABRACADABRA!', 'MIAUUU!':'¡MIAUUU!', 'SÜSSES ODER SAURES!':'¡TRUCO O TRATO!', 'LICHTERGLANZ!':'¡QUÉ LUCES!', 'HO HO HO!':'¡JO JO JO!',
+        'BOOOOM!':'¡BUUUM!', 'HELAU!':'¡CARNAVAL!', 'HOPP HOPP!':'¡HOP HOP!' },
+  fa: { 'BRRRUMM!':'برووووم!', 'WUUUSCH!':'ووووش!', 'ROOOAAAR!':'غرررررر!', 'SCHNAPP!':'هاپ!', 'KRAAAKE!':'کراکن!', 'WIEHER! 🌈':'شیهه! 🌈',
+        'TOOOOR!':'گلللللل!', 'TÖRÖÖÖ!':'تووووو!', 'FAUCH!':'فیششش!', 'GESCHAFFT!':'آفرین!', 'BUUUUH!':'بووووو!', 'MUAHAHA!':'ها ها ها!',
+        'HEX HEX!':'جادو جادو!', 'MIAUUU!':'میووو!', 'SÜSSES ODER SAURES!':'شیرینی یا شیطونی!', 'LICHTERGLANZ!':'فانوس‌ها!', 'HO HO HO!':'هو هو هو!',
+        'BOOOOM!':'بوووووم!', 'HELAU!':'هورا!', 'HOPP HOPP!':'هاپ هاپ!' },
+};
+function wordLabel(w) {
+  const m = /^ALLES GUTE, (.+)!$/.exec(w);
+  if (m) return ui('hbd', m[1].charAt(0) + m[1].slice(1).toLowerCase());
+  return (WORDS[lang] || {})[w] || w;
+}
+
 let mode = 'hw', theme = null, tick = null, wake = null, resetArmed = null, lastZone = null;
 // One shared star jar: the children collect stars together.
 let stars = 0;
@@ -570,7 +648,7 @@ function applyTheme(next) {
   const r = document.documentElement.style;
   r.setProperty('--bg1', theme.bg1); r.setProperty('--bg2', theme.bg2);
   r.setProperty('--housing', theme.housing); r.setProperty('--accent', theme.accent);
-  $('themeName').textContent = theme.name;
+  $('themeName').textContent = themeLabel(theme);
   $('hat').textContent = theme.hat;
   $('feet').innerHTML = theme.feet.map(f => '<span>' + f + '</span>').join('');
   $('runner').textContent = theme.runner;
@@ -648,15 +726,15 @@ function render() {
   const vis = $('vis-' + theme.vis);
   vis.classList.toggle('hurry', z === 'r' && t.running);
 
-  $('time').textContent = fmt(t.remaining);
+  $('time').textContent = num(fmt(t.remaining));
   const pausedMid = !t.running && !t.done && t.remaining < t.total;
-  $('status').textContent = z === 'done' ? m.done : pausedMid ? 'Angehalten ⏸' : z === 'ready' ? m.ready : m[z];
+  $('status').textContent = z === 'done' ? mt(mode, 'done') : pausedMid ? ui('paused') : z === 'ready' ? mt(mode, 'ready') : mt(mode, z);
 
   const p = Math.min(1, Math.max(0, 1 - t.remaining / t.total));
   $('runner').style.left = 'calc(6px + ' + (p * 100) + '% - ' + (p * 58) + 'px)';
 
   const go = $('go');
-  go.textContent = t.running ? 'Pause ⏸' : t.done ? 'Nochmal ▶' : pausedMid ? 'Weiter ▶' : 'Start ▶';
+  go.textContent = t.running ? ui('pause') : t.done ? ui('again') : pausedMid ? ui('cont') : ui('start');
   go.classList.toggle('running', t.running);
 
   const anyRunning = ORDER.some(k => timers[k].running);
@@ -665,12 +743,12 @@ function render() {
     b.setAttribute('aria-selected', String(k === mode));
     b.disabled = anyRunning && k !== mode;
   });
-  $('teamCount').textContent = stars;
+  $('teamCount').textContent = num(stars);
   // own timer: minutes can be changed while it is not running
   const own = timers.own;
   $('setter').hidden = !(mode === 'own' && !own.running && (own.done || own.remaining >= own.total));
-  $('ownVal').textContent = MODES.own.min + ' Min';
-  $('m-own').querySelector('small').textContent = MODES.own.min + ' Min';
+  $('ownVal').textContent = num(MODES.own.min) + ' ' + ui('min');
+  $('m-own').querySelector('small').textContent = num(MODES.own.min) + ' ' + ui('min');
   document.querySelectorAll('#ownQuick button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.min === MODES.own.min)));
   lastZone = z;
 }
@@ -876,9 +954,9 @@ function speak(text) {
   try {
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'de-DE'; u.rate = 0.95; u.pitch = 1.1;
+    u.lang = VOICE_LANG[lang]; u.rate = 0.95; u.pitch = 1.1;
     const vs = speechSynthesis.getVoices();
-    const v = vs.find(x => /anna/i.test(x.name) && /^de/i.test(x.lang)) || vs.find(x => /^de/i.test(x.lang));
+    const v = (lang === 'de' && vs.find(x => /anna/i.test(x.name) && /^de/i.test(x.lang))) || vs.find(x => x.lang && x.lang.toLowerCase().indexOf(lang) === 0);
     if (v) u.voice = v;
     speechSynthesis.speak(u);
   } catch (_) {}
@@ -904,7 +982,7 @@ function finale(done) {
   // some themes have several finales and pick one at random each time
   const pick = f.variants ? f.variants[Math.floor(Math.random() * f.variants.length)] : f;
   $('finHero').innerHTML = '<span style="display:inline-block' + (pick.flip ? ';transform:scaleX(-1)' : '') + '">' + pick.hero + '</span>';
-  $('finWord').textContent = pick.word;
+  $('finWord').textContent = wordLabel(pick.word);
   el.className = 'finale ' + f.anim;
   el.hidden = false;
   playSfx(pick.sfx || themeSounds(theme)[0]);
@@ -919,22 +997,22 @@ function showParty(which) {
   const m = MODES[which];
   confetti();
   $('partyEmoji').textContent = which === 'hw' ? theme.goal + ' 🎉' : m.party;
-  $('partyTitle').textContent = m.title;
+  $('partyTitle').textContent = mt(which, 'title');
   $('partySub').textContent = m.star
-    ? 'Ein Stern für euch beide ⭐ Zusammen habt ihr jetzt ' + stars + '!'
-    : which === 'br' ? 'Zurück an die Aufgaben. Ihr schafft das!' : 'Gut gemacht! 🎉';
+    ? ui('starSub', stars)
+    : which === 'br' ? ui('backWork') : ui('wellDone');
   const nb = $('partyNext');
   if (m.next) {
     const n = MODES[m.next];
     nb.hidden = false;
-    nb.textContent = n.lbl + ' starten ' + n.em + ' ' + n.min + ' Min';
+    nb.textContent = ui('startNext', mt(m.next, 'lbl'), n.em, n.min);
     nb.onclick = () => { $('party').hidden = true; resetTimer(m.next); switchMode(m.next); start(); };
   } else {
     nb.hidden = true;
     nb.onclick = null;
   }
   $('party').hidden = false;
-  speak(m.title + (m.star ? ' Ein Stern für euch!' : ''));
+  speak(mt(which, 'title') + (m.star ? ui('starSpeak') : ''));
 }
 $('partyClose').onclick = () => { $('party').hidden = true; };
 
@@ -960,12 +1038,12 @@ $('ownPlus').onclick = () => setOwn(MODES.own.min + 1);
 $('reset').onclick = () => {
   const b = $('reset');
   if (!resetArmed) {
-    b.textContent = 'Nochmal?'; b.classList.add('armed');
-    resetArmed = setTimeout(() => { resetArmed = null; b.textContent = 'Neu'; b.classList.remove('armed'); }, 3000);
+    b.textContent = ui('resetQ'); b.classList.add('armed');
+    resetArmed = setTimeout(() => { resetArmed = null; b.textContent = ui('reset'); b.classList.remove('armed'); }, 3000);
     return;
   }
   clearTimeout(resetArmed); resetArmed = null;
-  b.textContent = 'Neu'; b.classList.remove('armed');
+  b.textContent = ui('reset'); b.classList.remove('armed');
   resetTimer(mode); lastZone = null; render();
 };
 
@@ -980,9 +1058,31 @@ randomTheme();
 (function () {
   const now = new Date();
   const today = String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-  const kids = BIRTHDAYS.filter(b => b.day === today).map(b => b.name);
-  if (kids.length) { $('bday').textContent = '🎂 Heute hat ' + kids.join(' und ') + ' Geburtstag! 🎉'; $('bday').hidden = false; }
+  bdayKids = BIRTHDAYS.filter(b => b.day === today).map(b => b.name);
 })();
+// ---------- language switch ----------
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
+  $('langBtn').textContent = '🌐 ' + LANG_NAME[lang];
+  $('teamLbl').textContent = ui('stars');
+  $('partyClose').textContent = ui('close');
+  if (!resetArmed) $('reset').textContent = ui('reset');
+  ORDER.forEach(k => {
+    const b = $('m-' + k);
+    b.querySelector('.lbl').textContent = mt(k, 'lbl');
+    b.querySelector('small').textContent = num(MODES[k].min) + ' ' + ui('min');
+  });
+  $('themeName').textContent = themeLabel(theme);
+  if (bdayKids.length) { $('bday').textContent = ui('bday', bdayKids); $('bday').hidden = false; }
+  render();
+}
+$('langBtn').onclick = () => {
+  lang = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+  try { localStorage.setItem('ampelLang', lang); } catch (_) {}
+  applyLang();
+};
+applyLang();
 render();
 </script>
 
