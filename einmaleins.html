@@ -98,6 +98,13 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
   font-size:clamp(50px, 14vw, 92px); font-weight:800; line-height:1.1; font-variant-numeric:tabular-nums;
   border-bottom:6px solid var(--accent); padding:0 14px;
 }
+.ans.rest{border-bottom:0; padding:0; display:inline-flex; align-items:baseline; gap:10px}
+.ans .box{display:inline-block; min-width:1.4ch; min-height:1em; border-bottom:6px solid #c7c9d9; padding:0 8px; text-align:center}
+.ans .box.on{border-color:var(--accent)}
+.ans .rl{font-size:.4em; color:var(--muted); font-weight:800}
+.ans.rest.ok .box{border-color:var(--good)}
+.ans.rest.no .box{border-color:var(--bad)}
+.cell.na{background:transparent; border:2px dashed #e3e6ee; box-sizing:border-box}
 .ans.ok{color:var(--good); border-color:var(--good); animation:pop .45s cubic-bezier(.3,1.7,.5,1)}
 .ans.no{color:var(--bad); border-color:var(--bad); animation:shake .4s}
 .fb{min-height:1.5em; text-align:center; font-size:clamp(20px, 5.2vw, 26px); font-weight:800}
@@ -152,7 +159,8 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
       <div class="seg" role="group" aria-label="Rechenart">
         <button type="button" id="opX">× Mal</button>
         <button type="button" id="opD">÷ Geteilt</button>
-        <button type="button" id="opB">× und ÷</button>
+        <button type="button" id="opR">÷ mit Rest</button>
+        <button type="button" id="opA">Alles</button>
       </div>
     </div>
 
@@ -168,6 +176,7 @@ button:focus-visible{outline:3px solid var(--ink); outline-offset:3px}
       <div class="gridtabs" role="group" aria-label="Tabelle zeigen">
         <button type="button" id="gX">× Mal</button>
         <button type="button" id="gD">÷ Geteilt</button>
+        <button type="button" id="gR">÷ Rest</button>
       </div>
       <div class="grid" id="grid"></div>
       <div class="legend">
@@ -242,13 +251,17 @@ let stats = load('emStats', {});     // "a x b" -> { box: 0..5, seen, ok }
 let days = load('emDays', []);       // dates with a finished training, "YYYY-MM-DD"
 let history = load('emHistory', []); // last trainings
 let soundOn = load('emSound', true);
-let ops = load('emOps', 'both');          // 'x' multiply, 'd' divide, 'both'
-let gridOp = ops === 'd' ? 'd' : 'x';
-const opsList = () => ops === 'both' ? ['x', 'd'] : [ops];
+let ops = load('emOps', 'all');           // 'x' multiply, 'd' divide, 'r' divide with remainder, 'all' mixed
+if (ops === 'both') ops = 'all';
+let gridOp = ops === 'all' ? 'x' : ops;
+const opsList = () => ops === 'all' ? ['x', 'd', 'r'] : [ops];
+const validFact = (a, op) => op !== 'r' || a >= 2;              // dividing by 1 never leaves a remainder
+const factCount = op => op === 'r' ? 9 * 12 : 120;
 
 const ROWS = 10, COLS = 12;
 // a fact is row a with b (1..12): multiply a × b, or divide (a·b) ÷ a
-const key = (a, b, op) => op === 'd' ? a + ':' + b : a + 'x' + b;
+// remainder facts: divisor a, whole part b, with a remainder from 1 to a-1
+const key = (a, b, op) => op === 'd' ? a + ':' + b : op === 'r' ? a + '%' + b : a + 'x' + b;
 const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 
 // ---------- sounds: short clips played through one audio element (reliable on iPhone/iPad) ----------
@@ -299,7 +312,7 @@ function sfx(name) {
 
 // ---------- home ----------
 function boxOf(a, b, op) { const s = stats[key(a, b, op || 'x')]; return s ? s.box : -1; }
-function rowMastery(a) { let m = 0; const L = opsList(); L.forEach(op => { for (let b = 1; b <= COLS; b++) if (boxOf(a, b, op) >= 4) m++; }); return Math.round(100 * m / (COLS * L.length)); }
+function rowMastery(a) { let m = 0, n = 0; opsList().forEach(op => { if (!validFact(a, op)) return; for (let b = 1; b <= COLS; b++) { n++; if (boxOf(a, b, op) >= 4) m++; } }); return n ? Math.round(100 * m / n) : 0; }
 function streakDays() {
   const set = new Set(days); let n = 0; const d = new Date();
   if (!set.has(todayStr())) d.setDate(d.getDate() - 1);   // a streak still counts until today is over
@@ -311,13 +324,15 @@ function streakDays() {
 }
 function renderHome() {
   let mastered = 0; const L = opsList();
-  L.forEach(op => { for (let a = 1; a <= ROWS; a++) for (let b = 1; b <= COLS; b++) if (boxOf(a, b, op) >= 4) mastered++; });
+  L.forEach(op => { for (let a = 1; a <= ROWS; a++) if (validFact(a, op)) for (let b = 1; b <= COLS; b++) if (boxOf(a, b, op) >= 4) mastered++; });
   $('masteredCount').textContent = mastered;
-  $('masteredOf').textContent = '✅ von ' + (120 * L.length) + ' gekonnt';
+  $('masteredOf').textContent = '✅ von ' + L.reduce((n, op) => n + factCount(op), 0) + ' gekonnt';
   $('opX').setAttribute('aria-pressed', String(ops === 'x'));
   $('opD').setAttribute('aria-pressed', String(ops === 'd'));
-  $('opB').setAttribute('aria-pressed', String(ops === 'both'));
-  $('dailySub').textContent = '10 Minuten · ' + (ops === 'x' ? 'Mal-Aufgaben' : ops === 'd' ? 'Geteilt-Aufgaben' : 'Mal und Geteilt gemischt');
+  $('opR').setAttribute('aria-pressed', String(ops === 'r'));
+  $('opA').setAttribute('aria-pressed', String(ops === 'all'));
+  $('gR').setAttribute('aria-pressed', String(gridOp === 'r'));
+  $('dailySub').textContent = '10 Minuten · ' + ({ x:'Mal-Aufgaben', d:'Geteilt-Aufgaben', r:'Geteilt mit Rest', all:'×, ÷ und Rest gemischt' })[ops];
   $('gX').setAttribute('aria-pressed', String(gridOp === 'x'));
   $('gD').setAttribute('aria-pressed', String(gridOp === 'd'));
   $('streakDays').textContent = streakDays();
@@ -328,7 +343,11 @@ function renderHome() {
   for (let b = 1; b <= COLS; b++) g += '<span class="h">' + b + '</span>';
   for (let a = 1; a <= ROWS; a++) {
     g += '<span class="h">' + a + '</span>';
-    for (let b = 1; b <= COLS; b++) { const x = boxOf(a, b, gridOp); g += '<span class="cell' + (x >= 0 ? ' b' + x : '') + '" title="' + (gridOp === 'd' ? (a * b) + ' ÷ ' + a : a + ' × ' + b) + '"></span>'; }
+    for (let b = 1; b <= COLS; b++) {
+      if (!validFact(a, gridOp)) { g += '<span class="cell na"></span>'; continue; }
+      const x = boxOf(a, b, gridOp);
+      g += '<span class="cell' + (x >= 0 ? ' b' + x : '') + '" title="' + (gridOp === 'd' ? (a * b) + ' ÷ ' + a : gridOp === 'r' ? (a * b) + '+Rest ÷ ' + a : a + ' × ' + b) + '"></span>';
+    }
   }
   $('grid').innerHTML = g;
   $('hist').innerHTML = history.length
@@ -347,7 +366,7 @@ function startSession(rows, minutes) {
   S = { rows, total:minutes * 60000, left:minutes * 60000, endAt:Date.now() + minutes * 60000, running:true,
         asked:0, ok:0, streak:0, best:0, stars:0, wrong:[], retry:[], cur:null, typed:'', locked:false, timeUp:false,
         ops: opsList(),
-        mode: (rows.length === ROWS ? 'Training' : rows[0] + 'er-Reihe') + ' ' + (ops === 'x' ? '×' : ops === 'd' ? '÷' : '×÷') };
+        mode: (rows.length === ROWS ? 'Training' : rows[0] + 'er-Reihe') + ' ' + ({ x:'×', d:'÷', r:'÷ Rest', all:'× ÷ Rest' })[ops] };
   show('play'); $('pausedCard').hidden = true; $('qcard').hidden = false; $('pad').hidden = false;
   clearInterval(tick); tick = setInterval(step, 250);
   $('timebar').style.transition = 'none'; step(); void $('timebar').offsetWidth; $('timebar').style.transition = '';
@@ -369,13 +388,14 @@ function pickFact() {
   // a wrong answer comes back after 3 other questions
   if (S.retry.length && S.retry[0].due <= S.asked) return S.retry.shift().f;
   const pool = []; let sum = 0;
-  S.ops.forEach(op => S.rows.forEach(a => { for (let b = 1; b <= COLS; b++) {
+  S.ops.forEach(op => S.rows.forEach(a => { if (!validFact(a, op)) return; for (let b = 1; b <= COLS; b++) {
     const x = boxOf(a, b, op);
     let w = x < 0 ? 6 : [12, 8, 5, 3, 1.5, .8][x];
     if (S.cur && S.cur.a === a && S.cur.b === b && S.cur.op === op) w = 0;
     if (S.rows.length > 1 && (a === 1 || b === 1)) w *= .4;   // the 1-row is easy: ask it less in the mixed training
     pool.push([a, b, op, w]); sum += w;
   } }));
+  if (!pool.length) return { a:S.rows[0], b:1 + Math.floor(Math.random() * COLS), op:'d' };   // 1-row with remainder only: use plain division
   let r = Math.random() * sum;
   for (const [a, b, op, w] of pool) { r -= w; if (r <= 0) return { a, b, op }; }
   return { a:pool[0][0], b:pool[0][1], op:pool[0][2] };
@@ -383,36 +403,60 @@ function pickFact() {
 function nextQuestion() {
   const f = pickFact();
   const flip = Math.random() < .5 && f.b <= 10 && f.a !== f.b;   // sometimes 8 × 7 instead of 7 × 8, or 56 ÷ 8 instead of 56 ÷ 7
-  if (f.op === 'd') {
+  if (f.op === 'r') {
+    const rest = 1 + Math.floor(Math.random() * (f.a - 1));
+    S.cur = { a:f.a, b:f.b, op:'r', text:(f.a * f.b + rest) + ' ÷ ' + f.a, right:f.b, rest, shown:Date.now() };
+  } else if (f.op === 'd') {
     const div = flip ? f.b : f.a;
     S.cur = { a:f.a, b:f.b, op:'d', text:(f.a * f.b) + ' ÷ ' + div, right:(f.a * f.b) / div, shown:Date.now() };
   } else {
     S.cur = { a:f.a, b:f.b, op:'x', text:(flip ? f.b : f.a) + ' × ' + (flip ? f.a : f.b), right:f.a * f.b, shown:Date.now() };
   }
-  S.typed = ''; S.locked = false;
+  S.typed = ''; S.typedR = ''; S.field = 'q'; S.locked = false;
   $('q').textContent = S.cur.text;
-  $('ans').textContent = ''; $('ans').className = 'ans';
+  showAns('');
   $('fb').textContent = S.timeUp ? 'Letzte Aufgabe!' : ''; $('fb').className = 'fb';
+}
+// the answer area: one number, or for remainder questions two boxes "7 Rest 5"
+function showAns(state, q, r) {
+  const el = $('ans'), isR = S.cur.op === 'r';
+  const qv = q !== undefined ? q : S.typed, rv = r !== undefined ? r : S.typedR;
+  el.className = 'ans' + (isR ? ' rest' : '') + (state ? ' ' + state : '');
+  if (isR) {
+    el.innerHTML = '<span class="box' + (!state && S.field === 'q' ? ' on' : '') + '">' + qv + '</span><span class="rl">Rest</span>' +
+                   '<span class="box' + (!state && S.field === 'r' ? ' on' : '') + '">' + rv + '</span>';
+  } else el.textContent = qv;
+  const go = document.querySelector('.key.go');
+  if (go) go.textContent = isR && S.field === 'q' && !state ? 'Rest →' : 'OK';
 }
 function typeDigit(d) {
   if (!S || S.locked || !S.running) return;
+  if (S.cur.op === 'r' && S.field === 'r') { S.typedR = d; showAns(''); return; }   // a remainder is always one digit
   if (S.typed.length >= 3) return;
   if (S.typed === '' && d === '0') { S.typed = '0'; } else S.typed = (S.typed === '0' ? '' : S.typed) + d;
-  $('ans').textContent = S.typed;
+  showAns('');
 }
-function backspace() { if (!S || S.locked || !S.running) return; S.typed = S.typed.slice(0, -1); $('ans').textContent = S.typed; }
+function backspace() {
+  if (!S || S.locked || !S.running) return;
+  if (S.cur.op === 'r' && S.field === 'r') { if (S.typedR !== '') S.typedR = ''; else S.field = 'q'; showAns(''); return; }
+  S.typed = S.typed.slice(0, -1); showAns('');
+}
 function submit() {
   if (!S || S.locked || !S.running || S.typed === '') return;
+  if (S.cur.op === 'r' && S.field === 'q') { S.field = 'r'; showAns(''); return; }   // first the whole part, then the remainder
+  if (S.cur.op === 'r' && S.typedR === '') return;
   S.locked = true; S.asked++;
   const { a, b, op } = S.cur, right = S.cur.right, ms = Date.now() - S.cur.shown, k = key(a, b, op);
+  const rightText = op === 'r' ? right + ' Rest ' + S.cur.rest : String(right);
   const st = stats[k] || { box:-1, seen:0, ok:0 };
   st.seen++;
-  if (+S.typed === right) {
+  const correct = op === 'r' ? (+S.typed === right && +S.typedR === S.cur.rest) : +S.typed === right;
+  if (correct) {
     st.ok++;
-    const fast = ms < 6000;
+    const fast = ms < (op === 'r' ? 9000 : 6000);
     st.box = st.box < 0 ? (fast ? 2 : 1) : fast ? Math.min(5, st.box + 1) : Math.max(st.box, 1);
     S.ok++; S.streak++; S.best = Math.max(S.best, S.streak); S.stars += S.streak >= 5 ? 2 : 1;
-    $('ans').className = 'ans ok';
+    showAns('ok');
     const special = S.streak > 0 && S.streak % 5 === 0;
     $('fb').textContent = special ? '🔥 ' + S.streak + ' richtig hintereinander!' : PRAISE[Math.floor(Math.random() * PRAISE.length)];
     $('fb').className = 'fb ok';
@@ -422,10 +466,10 @@ function submit() {
   } else {
     st.box = 0;
     S.streak = 0;
-    if (!S.wrong.some(w => w.k === k)) S.wrong.push({ k, text:S.cur.text + ' = ' + right });
+    if (!S.wrong.some(w => w.k === k)) S.wrong.push({ k, text:S.cur.text + ' = ' + rightText });
     S.retry.push({ f:{ a, b, op }, due:S.asked + 3 });
-    $('ans').className = 'ans no'; $('ans').textContent = right;
-    $('fb').textContent = 'Fast! ' + S.cur.text + ' = ' + right;
+    showAns('no', String(right), op === 'r' ? String(S.cur.rest) : undefined);
+    $('fb').textContent = 'Fast! ' + S.cur.text + ' = ' + rightText;
     $('fb').className = 'fb no';
     sfx('no');
     stats[k] = st; save('emStats', stats); hud();
@@ -495,10 +539,12 @@ document.addEventListener('keydown', e => {
 
 // ---------- buttons ----------
 $('startDaily').onclick = () => startSession([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 10);
-const setOps = v => { ops = v; save('emOps', ops); gridOp = ops === 'd' ? 'd' : ops === 'x' ? 'x' : gridOp; renderHome(); };
+const setOps = v => { ops = v; save('emOps', ops); if (ops !== 'all') gridOp = ops; renderHome(); };
 $('opX').onclick = () => setOps('x');
 $('opD').onclick = () => setOps('d');
-$('opB').onclick = () => setOps('both');
+$('opR').onclick = () => setOps('r');
+$('opA').onclick = () => setOps('all');
+$('gR').onclick = () => { gridOp = 'r'; renderHome(); };
 $('gX').onclick = () => { gridOp = 'x'; renderHome(); };
 $('gD').onclick = () => { gridOp = 'd'; renderHome(); };
 $('pauseBtn').onclick = pause;
