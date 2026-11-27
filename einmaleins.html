@@ -449,7 +449,7 @@ function step() {
 // ---------- word problems: fresh numbers every time; about a third are two-step puzzles ----------
 const ri = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
 const pickOne = arr => arr[Math.floor(Math.random() * arr.length)];
-const KIDS = [['Lena', 1, 'لنا'], ['Tom', 0, 'تام'], ['Mia', 1, 'میا'], ['Ben', 0, 'بن'], ['Emma', 1, 'اِما'], ['Paul', 0, 'پاول'], ['Sofia', 1, 'سوفیا'], ['Noah', 0, 'نوآ'], ['Lina', 1, 'لینا'], ['Leo', 0, 'لئو']];
+const KIDS = [['Lena', 1, 'لنا'], ['Tom', 0, 'تام'], ['Mia', 1, 'میا'], ['Ben', 0, 'بن'], ['Emma', 1, 'اِما'], ['Paul', 0, 'پاول'], ['Sofia', 1, 'سوفیا'], ['Noah', 0, 'نوآ'], ['Lina', 1, 'لینا'], ['Leo', 0, 'لئو'], ['Max', 0, 'مکس'], ['Hanna', 1, 'هانا'], ['Elias', 0, 'الیاس'], ['Clara', 1, 'کلارا'], ['Jonas', 0, 'یوناس'], ['Marie', 1, 'ماری'], ['Finn', 0, 'فین'], ['Lea', 1, 'لئا']];
 const who = () => { const [n, f, fa] = pickOne(KIDS); return { n, fa, er:f ? 'sie' : 'er' }; };
 const F = x => String(x).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);   // Persian digits
 const WORD = [
@@ -551,8 +551,244 @@ const WORD = [
       de:'In der Klasse sind ' + g + ' Mädchen und ' + j + ' Jungen. Heute fehlen ' + f + ' Kinder. Wie viele Kinder sind da?',
       es:'En la clase hay ' + g + ' niñas y ' + j + ' niños. Hoy faltan ' + f + '. ¿Cuántos niños hay en clase?',
       fa:'در کلاس ' + F(g) + ' دختر و ' + F(j) + ' پسر هست. امروز ' + F(f) + ' نفر غایب‌اند. چند بچه سر کلاس هستند؟' } }; },
+  // ---- more problems, so the mix stays fresh ----
+  // times
+  () => { const a = ri(2, 9), b = pickOne([6, 10]);
+    return { kind:'mul', em:'🥚', right:a * b, short:a + ' × ' + b + ' = ' + (a * b), text:{
+      de:'Im Laden stehen ' + a + ' Eierkartons mit je ' + b + ' Eiern. Wie viele Eier sind das?',
+      es:'En la tienda hay ' + a + ' cartones con ' + b + ' huevos cada uno. ¿Cuántos huevos son?',
+      fa:'در مغازه ' + F(a) + ' شانه تخم‌مرغ هست و در هر شانه ' + F(b) + ' تخم‌مرغ. روی هم چند تخم‌مرغ است؟' } }; },
+  () => { const p = who(), a = ri(3, 9), b = ri(4, 9);
+    return { kind:'mul', em:'🌷', right:a * b, short:a + ' × ' + b + ' = ' + (a * b), text:{
+      de:p.n + ' pflanzt ' + a + ' Reihen Tulpen. In jede Reihe kommen ' + b + ' Tulpen. Wie viele Tulpen sind es?',
+      es:p.n + ' planta ' + a + ' filas de tulipanes. En cada fila van ' + b + ' tulipanes. ¿Cuántos tulipanes son?',
+      fa:p.fa + ' ' + F(a) + ' ردیف لاله می‌کارد. در هر ردیف ' + F(b) + ' لاله است. روی هم چند لاله است؟' } }; },
+  () => { const p = who(), a = ri(2, 6), b = ri(5, 12);
+    return { kind:'mul', em:'🧱', right:a * b, short:a + ' × ' + b + ' = ' + (a * b), text:{
+      de:'Für ein Lego-Haus braucht man ' + b + ' Steine. ' + p.n + ' baut ' + a + ' Häuser. Wie viele Steine braucht ' + p.er + '?',
+      es:'Para una casa de Lego hacen falta ' + b + ' piezas. ' + p.n + ' construye ' + a + ' casas. ¿Cuántas piezas necesita?',
+      fa:'برای یک خانهٔ لگو ' + F(b) + ' قطعه لازم است. ' + p.fa + ' ' + F(a) + ' خانه می‌سازد. چند قطعه لازم دارد؟' } }; },
+  () => { const p = who(), a = ri(3, 7), b = ri(3, 8);
+    return { kind:'mul', em:'🐻', right:a * b, short:a + ' × ' + b + ' = ' + (a * b), text:{
+      de:p.n + ' isst jeden Tag ' + b + ' Gummibärchen. Wie viele Gummibärchen sind es nach ' + a + ' Tagen?',
+      es:p.n + ' come ' + b + ' ositos de goma cada día. ¿Cuántos ositos son después de ' + a + ' días?',
+      fa:p.fa + ' هر روز ' + F(b) + ' پاستیل خرسی می‌خورد. بعد از ' + F(a) + ' روز چند پاستیل خورده است؟' } }; },
+  () => { const a = ri(2, 8), b = pickOne([5, 6, 7, 11]);
+    return { kind:'mul', em:'⚽', right:a * b, short:a + ' × ' + b + ' = ' + (a * b), text:{
+      de:'Beim Turnier spielen ' + a + ' Mannschaften mit je ' + b + ' Kindern. Wie viele Kinder spielen mit?',
+      es:'En el torneo juegan ' + a + ' equipos con ' + b + ' niños cada uno. ¿Cuántos niños juegan?',
+      fa:'در مسابقه ' + F(a) + ' تیم بازی می‌کنند و هر تیم ' + F(b) + ' بازیکن دارد. چند بچه بازی می‌کنند؟' } }; },
+  () => { const a = ri(4, 12);
+    return { kind:'mul', em:'🚗', right:a * 4, short:a + ' × 4 = ' + (a * 4), text:{
+      de:'Auf dem Parkplatz stehen ' + a + ' Autos. Wie viele Räder haben sie zusammen?',
+      es:'En el aparcamiento hay ' + a + ' coches. ¿Cuántas ruedas tienen en total?',
+      fa:'در پارکینگ ' + F(a) + ' ماشین هست. روی هم چند چرخ دارند؟' } }; },
+  () => { const p = who(), a = ri(3, 7), b = ri(5, 12);
+    return { kind:'mul', em:'📖', right:a * b, short:a + ' × ' + b + ' = ' + (a * b), text:{
+      de:p.n + ' liest jeden Tag ' + b + ' Seiten. Wie viele Seiten hat ' + p.er + ' nach ' + a + ' Tagen gelesen?',
+      es:p.n + ' lee ' + b + ' páginas cada día. ¿Cuántas páginas ha leído después de ' + a + ' días?',
+      fa:p.fa + ' هر روز ' + F(b) + ' صفحه کتاب می‌خواند. بعد از ' + F(a) + ' روز چند صفحه خوانده است؟' } }; },
+  () => { const a = ri(3, 9);
+    return { kind:'mul', em:'🙌', right:a * 10, short:a + ' × 10 = ' + (a * 10), text:{
+      de:a + ' Kinder strecken beide Hände in die Luft. Wie viele Finger sind das?',
+      es:a + ' niños levantan las dos manos. ¿Cuántos dedos son?',
+      fa:F(a) + ' بچه هر دو دستشان را بالا می‌برند. روی هم چند انگشت است؟' } }; },
+  () => { const p = who(), a = ri(6, 10), f = ri(3, 5);
+    return { kind:'mul', em:'👨', right:a * f, short:a + ' × ' + f + ' = ' + (a * f), text:{
+      de:p.n + ' ist ' + a + ' Jahre alt. Papa ist ' + f + '-mal so alt. Wie alt ist Papa?',
+      es:p.n + ' tiene ' + a + ' años. Papá tiene ' + f + ' veces esa edad. ¿Cuántos años tiene papá?',
+      fa:p.fa + ' ' + F(a) + ' ساله است. سن بابا ' + F(f) + ' برابر اوست. بابا چند سال دارد؟' } }; },
+  // divide
+  () => { const k = ri(2, 4), q = ri(4, 8), n = k * q;
+    return { kind:'div', em:'🥅', right:q, short:n + ' ÷ ' + k + ' = ' + q, text:{
+      de:n + ' Kinder spielen Fußball. Sie bilden ' + k + ' gleich große Mannschaften. Wie viele Kinder sind in jeder Mannschaft?',
+      es:n + ' niños juegan al fútbol. Forman ' + k + ' equipos iguales. ¿Cuántos niños hay en cada equipo?',
+      fa:F(n) + ' بچه فوتبال بازی می‌کنند. ' + F(k) + ' تیم هم‌اندازه درست می‌کنند. در هر تیم چند بچه است؟' } }; },
+  () => { const k = pickOne([6, 8, 10, 12]), q = ri(2, 9), n = k * q;
+    return { kind:'div', em:'🖍️', right:q, short:n + ' ÷ ' + k + ' = ' + q, text:{
+      de:n + ' Buntstifte kommen in Schachteln zu je ' + k + '. Wie viele Schachteln werden gefüllt?',
+      es:n + ' lápices de colores van en cajas de ' + k + '. ¿Cuántas cajas se llenan?',
+      fa:F(n) + ' مداد رنگی در جعبه‌های ' + F(k) + ' تایی گذاشته می‌شود. چند جعبه پر می‌شود؟' } }; },
+  () => { const q = ri(1, 6), n = 7 * q;
+    return { kind:'div', em:'🏖️', right:q, short:n + ' ÷ 7 = ' + q, text:{
+      de:'Die Ferien dauern ' + n + ' Tage. Wie viele Wochen sind das?',
+      es:'Las vacaciones duran ' + n + ' días. ¿Cuántas semanas son?',
+      fa:'تعطیلات ' + F(n) + ' روز طول می‌کشد. این چند هفته است؟' } }; },
+  () => { const p = who(), q = ri(3, 12), n = 2 * q;
+    return { kind:'div', em:'🚲', right:q, short:n + ' ÷ 2 = ' + q, text:{
+      de:p.n + ' zählt im Fahrradständer ' + n + ' Räder. Wie viele Fahrräder stehen dort?',
+      es:p.n + ' cuenta ' + n + ' ruedas en el aparcabicis. ¿Cuántas bicicletas hay?',
+      fa:p.fa + ' در جای دوچرخه ' + F(n) + ' چرخ می‌شمارد. چند دوچرخه آنجاست؟' } }; },
+  () => { const k = ri(2, 6), q = ri(2, 6), n = k * q;
+    return { kind:'div', em:'🍫', right:q, short:n + ' ÷ ' + k + ' = ' + q, text:{
+      de:'Eine Tafel Schokolade hat ' + n + ' Stückchen. ' + k + ' Geschwister teilen sie gerecht. Wie viele Stückchen bekommt jedes?',
+      es:'Una tableta de chocolate tiene ' + n + ' trocitos. ' + k + ' hermanos la reparten por igual. ¿Cuántos trocitos recibe cada uno?',
+      fa:'یک شکلات تخته‌ای ' + F(n) + ' تکه دارد. ' + F(k) + ' خواهر و برادر آن را مساوی تقسیم می‌کنند. به هر کدام چند تکه می‌رسد؟' } }; },
+  () => { const q = ri(2, 9), n = 4 * q;
+    return { kind:'div', em:'🐴', right:q, short:n + ' ÷ 4 = ' + q, text:{
+      de:'Auf der Weide zählt man ' + n + ' Pferdebeine. Wie viele Pferde sind auf der Weide?',
+      es:'En el prado se cuentan ' + n + ' patas de caballo. ¿Cuántos caballos hay?',
+      fa:'در چراگاه ' + F(n) + ' پای اسب شمرده می‌شود. چند اسب آنجاست؟' } }; },
+  // remainder
+  () => { const q = ri(2, 8), r = ri(1, 5), n = 6 * q + r;
+    return { kind:'rest', em:'🐓', right:q, rest:r, short:n + ' ÷ 6 = ' + q + ' Rest ' + r, text:{
+      de:'Die Hühner legen ' + n + ' Eier. In einen Karton passen 6 Eier. Wie viele Kartons werden voll – und wie viele Eier bleiben übrig?',
+      es:'Las gallinas ponen ' + n + ' huevos. En un cartón caben 6. ¿Cuántos cartones se llenan y cuántos huevos sobran?',
+      fa:'مرغ‌ها ' + F(n) + ' تخم می‌گذارند. در هر شانه ' + F(6) + ' تخم‌مرغ جا می‌شود. چند شانه پر می‌شود و چند تخم‌مرغ باقی می‌ماند؟' } }; },
+  () => { const q = ri(2, 9), r = ri(1, 6), n = 7 * q + r;
+    return { kind:'rest', em:'📅', right:q, rest:r, short:n + ' ÷ 7 = ' + q + ' Rest ' + r, text:{
+      de:'Bis zu ' + pickOne(['Weihnachten', 'den Ferien', 'Omas Besuch']) + ' sind es noch ' + n + ' Tage. Wie viele ganze Wochen sind das – und wie viele Tage bleiben übrig?',
+      es:'Faltan ' + n + ' días. ¿Cuántas semanas enteras son y cuántos días sobran?',
+      fa:F(n) + ' روز مانده است. این چند هفتهٔ کامل است و چند روز باقی می‌ماند؟' } }; },
+  () => { const k = ri(3, 8), q = ri(2, 6), r = ri(1, k - 1), n = k * q + r;
+    return { kind:'rest', em:'🎈', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r, text:{
+      de:'Auf dem Fest gibt es ' + n + ' Luftballons für ' + k + ' Kinder. Jedes Kind bekommt gleich viele. Wie viele bekommt jedes Kind – und wie viele bleiben übrig?',
+      es:'En la fiesta hay ' + n + ' globos para ' + k + ' niños. Cada niño recibe los mismos. ¿Cuántos recibe cada uno y cuántos sobran?',
+      fa:'در جشن ' + F(n) + ' بادکنک برای ' + F(k) + ' بچه هست. به همه به یک اندازه می‌رسد. به هر بچه چند بادکنک می‌رسد و چند تا باقی می‌ماند؟' } }; },
+  () => { const k = pickOne([4, 6]), q = ri(3, 8), r = ri(1, k - 1), n = k * q + r;
+    return { kind:'rest', em:'🪑', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r, text:{
+      de:'Beim Elternabend kommen ' + n + ' Gäste. An jeden Tisch passen ' + k + '. Wie viele Tische werden voll – und wie viele Gäste bleiben übrig?',
+      es:'A la reunión vienen ' + n + ' invitados. En cada mesa caben ' + k + '. ¿Cuántas mesas se llenan y cuántos invitados sobran?',
+      fa:F(n) + ' مهمان به جلسه می‌آیند. سر هر میز ' + F(k) + ' نفر جا می‌شوند. چند میز پر می‌شود و چند مهمان باقی می‌مانند؟' } }; },
+  () => { const p = who(), k = ri(3, 6), q = ri(3, 9), r = ri(1, k - 1), n = k * q + r;
+    return { kind:'rest', em:'🍬', right:q, rest:r, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r, text:{
+      de:p.n + ' hat ' + n + ' Bonbons und teilt sie gerecht mit ' + (k - 1) + ' Freunden – ' + p.er + ' selbst bekommt auch welche. Wie viele bekommt jeder – und wie viele bleiben übrig?',
+      es:p.n + ' tiene ' + n + ' caramelos y los reparte por igual con ' + (k - 1) + ' amigos (también para sí). ¿Cuántos recibe cada uno y cuántos sobran?',
+      fa:p.fa + ' ' + F(n) + ' آب‌نبات دارد و آن‌ها را مساوی بین خودش و ' + F(k - 1) + ' دوستش تقسیم می‌کند. به هر نفر چند تا می‌رسد و چند تا باقی می‌ماند؟' } }; },
+  // plus
+  () => { const p = who(), a = ri(12, 60), b = ri(5, 30);
+    return { kind:'add', em:'🐷', right:a + b, short:a + ' + ' + b + ' = ' + (a + b), text:{
+      de:'Im Sparschwein von ' + p.n + ' sind ' + a + ' €. Oma schenkt ' + b + ' € dazu. Wie viel Geld ist jetzt im Sparschwein?',
+      es:'En la hucha de ' + p.n + ' hay ' + a + ' €. La abuela le da ' + b + ' € más. ¿Cuánto dinero hay ahora?',
+      fa:'در قلک ' + p.fa + ' ' + F(a) + ' یورو هست. مادربزرگ ' + F(b) + ' یوروی دیگر می‌دهد. حالا چقدر پول در قلک است؟' } }; },
+  () => { const a = ri(18, 29), b = ri(18, 29);
+    return { kind:'add', em:'🚌', right:a + b, short:a + ' + ' + b + ' = ' + (a + b), text:{
+      de:'Zwei Klassen fahren zusammen in den Zoo. In der einen sind ' + a + ' Kinder, in der anderen ' + b + '. Wie viele Kinder fahren mit?',
+      es:'Dos clases van juntas al zoo. En una hay ' + a + ' niños y en la otra ' + b + '. ¿Cuántos niños van?',
+      fa:'دو کلاس با هم به باغ وحش می‌روند. یکی ' + F(a) + ' بچه دارد و دیگری ' + F(b) + '. چند بچه می‌روند؟' } }; },
+  () => { const p = who(), a = ri(25, 80), b = ri(15, 70);
+    return { kind:'add', em:'🎮', right:a + b, short:a + ' + ' + b + ' = ' + (a + b), text:{
+      de:p.n + ' bekommt in der ersten Runde ' + a + ' Punkte und in der zweiten ' + b + '. Wie viele Punkte sind das zusammen?',
+      es:p.n + ' consigue ' + a + ' puntos en la primera ronda y ' + b + ' en la segunda. ¿Cuántos puntos son en total?',
+      fa:p.fa + ' در دور اول ' + F(a) + ' امتیاز و در دور دوم ' + F(b) + ' امتیاز می‌گیرد. روی هم چند امتیاز است؟' } }; },
+  () => { const a = ri(45, 180), b = ri(30, 150);
+    return { kind:'add', em:'🗺️', right:a + b, short:a + ' + ' + b + ' = ' + (a + b), text:{
+      de:'Auf dem Weg in den Urlaub fährt die Familie am ersten Tag ' + a + ' km und am zweiten Tag ' + b + ' km. Wie weit ist sie gefahren?',
+      es:'De camino a las vacaciones, la familia recorre ' + a + ' km el primer día y ' + b + ' km el segundo. ¿Cuántos km ha recorrido?',
+      fa:'خانواده در راه سفر روز اول ' + F(a) + ' کیلومتر و روز دوم ' + F(b) + ' کیلومتر رانندگی می‌کند. روی هم چند کیلومتر رفته‌اند؟' } }; },
+  () => { const a = ri(5, 20), b = ri(5, 20), c = ri(5, 20);
+    return { kind:'add', em:'🌼', right:a + b + c, short:a + ' + ' + b + ' + ' + c + ' = ' + (a + b + c), text:{
+      de:'Im Garten blühen ' + a + ' rote, ' + b + ' gelbe und ' + c + ' weiße Blumen. Wie viele Blumen sind es?',
+      es:'En el jardín hay ' + a + ' flores rojas, ' + b + ' amarillas y ' + c + ' blancas. ¿Cuántas flores hay?',
+      fa:'در باغچه ' + F(a) + ' گل قرمز، ' + F(b) + ' گل زرد و ' + F(c) + ' گل سفید است. روی هم چند گل است؟' } }; },
+  () => { const p = who(), a = ri(110, 140), b = ri(3, 9);
+    return { kind:'add', em:'📏', right:a + b, short:a + ' + ' + b + ' = ' + (a + b), text:{
+      de:p.n + ' ist ' + a + ' cm groß. In einem Jahr wächst ' + p.er + ' ' + b + ' cm. Wie groß ist ' + p.n + ' dann?',
+      es:p.n + ' mide ' + a + ' cm. En un año crece ' + b + ' cm. ¿Cuánto mide entonces?',
+      fa:'قد ' + p.fa + ' ' + F(a) + ' سانتی‌متر است. در یک سال ' + F(b) + ' سانتی‌متر بلندتر می‌شود. آن وقت قدش چقدر است؟' } }; },
+  // minus
+  () => { const a = ri(200, 500), b = ri(40, a - 50);
+    return { kind:'sub', em:'🧩', right:a - b, short:a + ' − ' + b + ' = ' + (a - b), text:{
+      de:'Ein Puzzle hat ' + a + ' Teile. ' + b + ' Teile sind schon gelegt. Wie viele Teile fehlen noch?',
+      es:'Un puzle tiene ' + a + ' piezas. Ya hay ' + b + ' colocadas. ¿Cuántas faltan?',
+      fa:'یک پازل ' + F(a) + ' تکه دارد. ' + F(b) + ' تکه گذاشته شده است. چند تکه مانده است؟' } }; },
+  () => { const p = who(), a = ri(60, 85), b = ri(5, 11);
+    return { kind:'sub', em:'👵', right:a - b, short:a + ' − ' + b + ' = ' + (a - b), text:{
+      de:'Oma ist ' + a + ' Jahre alt, ' + p.n + ' ist ' + b + '. Wie viele Jahre ist Oma älter?',
+      es:'La abuela tiene ' + a + ' años y ' + p.n + ' tiene ' + b + '. ¿Cuántos años mayor es la abuela?',
+      fa:'مادربزرگ ' + F(a) + ' ساله است و ' + p.fa + ' ' + F(b) + ' ساله. مادربزرگ چند سال بزرگ‌تر است؟' } }; },
+  () => { const a = ri(25, 70), b = ri(6, a - 4);
+    return { kind:'sub', em:'🐦', right:a - b, short:a + ' − ' + b + ' = ' + (a - b), text:{
+      de:'Auf dem Dach sitzen ' + a + ' Spatzen. Eine Katze kommt und ' + b + ' fliegen weg. Wie viele sitzen noch auf dem Dach?',
+      es:'En el tejado hay ' + a + ' gorriones. Llega un gato y se van volando ' + b + '. ¿Cuántos quedan en el tejado?',
+      fa:'روی پشت‌بام ' + F(a) + ' گنجشک نشسته‌اند. گربه‌ای می‌آید و ' + F(b) + ' تا پرواز می‌کنند. چند گنجشک هنوز روی پشت‌بام هستند؟' } }; },
+  () => { const p = who(), a = ri(80, 200), b = ri(20, a - 10);
+    return { kind:'sub', em:'📗', right:a - b, short:a + ' − ' + b + ' = ' + (a - b), text:{
+      de:'Ein Buch hat ' + a + ' Seiten. ' + p.n + ' hat schon ' + b + ' Seiten gelesen. Wie viele Seiten fehlen noch?',
+      es:'Un libro tiene ' + a + ' páginas. ' + p.n + ' ya ha leído ' + b + '. ¿Cuántas páginas le faltan?',
+      fa:'یک کتاب ' + F(a) + ' صفحه دارد. ' + p.fa + ' تا حالا ' + F(b) + ' صفحه خوانده است. چند صفحه مانده است؟' } }; },
+  () => { const a = pickOne([20, 50, 100]), b = ri(3, a - 2);
+    return { kind:'sub', em:'🛒', right:a - b, short:a + ' − ' + b + ' = ' + (a - b), text:{
+      de:'Der Einkauf kostet ' + b + ' €. Mama bezahlt mit einem ' + a + '-€-Schein. Wie viel Wechselgeld bekommt sie?',
+      es:'La compra cuesta ' + b + ' €. Mamá paga con un billete de ' + a + ' €. ¿Cuánto le devuelven?',
+      fa:'خرید ' + F(b) + ' یورو می‌شود. مامان با یک اسکناس ' + F(a) + ' یورویی پول می‌دهد. چقدر پول پس می‌گیرد؟' } }; },
+  () => { const p = who(), g = pickOne([50, 100]), a = ri(12, g - 5);
+    return { kind:'sub', em:'🏆', right:g - a, short:g + ' − ' + a + ' = ' + (g - a), text:{
+      de:'Für einen Pokal braucht man ' + g + ' Punkte. ' + p.n + ' hat schon ' + a + '. Wie viele Punkte fehlen noch?',
+      es:'Para ganar la copa hacen falta ' + g + ' puntos. ' + p.n + ' ya tiene ' + a + '. ¿Cuántos le faltan?',
+      fa:'برای جام ' + F(g) + ' امتیاز لازم است. ' + p.fa + ' تا حالا ' + F(a) + ' امتیاز دارد. چند امتیاز دیگر لازم است؟' } }; },
+  // two-step puzzles
+  () => { const a = ri(2, 6), b = ri(2, 4), c = a * b < 18 ? 20 : 50;
+    return { kind:'mix', em:'🥨', right:c - a * b, hard:true, short:a + ' × ' + b + ' = ' + (a * b) + ',  ' + c + ' − ' + (a * b) + ' = ' + (c - a * b), text:{
+      de:'Papa kauft ' + a + ' Brezeln. Jede kostet ' + b + ' €. Er bezahlt mit ' + c + ' €. Wie viel Geld bekommt er zurück?',
+      es:'Papá compra ' + a + ' pretzels. Cada uno cuesta ' + b + ' €. Paga con ' + c + ' €. ¿Cuánto le devuelven?',
+      fa:'بابا ' + F(a) + ' نان پرتزل می‌خرد. هر کدام ' + F(b) + ' یورو است. با ' + F(c) + ' یورو پول می‌دهد. چقدر پس می‌گیرد؟' } }; },
+  () => { const e = ri(8, 12), k = ri(2, 4), c = ri(4, 7);
+    return { kind:'mix', em:'🎬', right:2 * e + k * c, hard:true, short:'2 × ' + e + ' = ' + (2 * e) + ',  ' + k + ' × ' + c + ' = ' + (k * c) + ',  ' + (2 * e) + ' + ' + (k * c) + ' = ' + (2 * e + k * c), text:{
+      de:'Eine Familie geht ins Kino: 2 Erwachsene zu je ' + e + ' € und ' + k + ' Kinder zu je ' + c + ' €. Wie viel kostet das zusammen?',
+      es:'Una familia va al cine: 2 adultos a ' + e + ' € cada uno y ' + k + ' niños a ' + c + ' € cada uno. ¿Cuánto cuesta en total?',
+      fa:'خانواده‌ای به سینما می‌رود: ۲ بزرگسال هر کدام ' + F(e) + ' یورو و ' + F(k) + ' بچه هر کدام ' + F(c) + ' یورو. روی هم چقدر می‌شود؟' } }; },
+  () => { const r = ri(6, 12), n = ri(8, r * 4 - 3);
+    return { kind:'mix', em:'💺', right:r * 4 - n, hard:true, short:r + ' × 4 = ' + (r * 4) + ',  ' + (r * 4) + ' − ' + n + ' = ' + (r * 4 - n), text:{
+      de:'Ein Bus hat ' + r + ' Reihen mit je 4 Sitzen. ' + n + ' Kinder steigen ein. Wie viele Sitze bleiben frei?',
+      es:'Un autobús tiene ' + r + ' filas de 4 asientos. Suben ' + n + ' niños. ¿Cuántos asientos quedan libres?',
+      fa:'یک اتوبوس ' + F(r) + ' ردیف ۴ صندلی دارد. ' + F(n) + ' بچه سوار می‌شوند. چند صندلی خالی می‌ماند؟' } }; },
+  () => { const p = who(), w = ri(3, 8), q = ri(2, 7), h = ri(5, 20), g = h + w * q;
+    return { kind:'mix', em:'🎁', right:q, hard:true, short:g + ' − ' + h + ' = ' + (g - h) + ',  ' + (g - h) + ' ÷ ' + w + ' = ' + q, text:{
+      de:p.n + ' möchte ein Spiel für ' + g + ' € kaufen. ' + (p.er === 'sie' ? 'Sie' : 'Er') + ' hat schon ' + h + ' € und spart jede Woche ' + w + ' €. Wie viele Wochen muss ' + p.er + ' noch sparen?',
+      es:p.n + ' quiere comprar un juego de ' + g + ' €. Ya tiene ' + h + ' € y ahorra ' + w + ' € cada semana. ¿Cuántas semanas más tiene que ahorrar?',
+      fa:p.fa + ' می‌خواهد یک بازی ' + F(g) + ' یورویی بخرد. ' + F(h) + ' یورو دارد و هر هفته ' + F(w) + ' یورو پس‌انداز می‌کند. چند هفتهٔ دیگر باید پس‌انداز کند؟' } }; },
+  () => { const a = ri(2, 6), b = ri(2, 6);
+    return { kind:'mix', em:'🕷️🐞', right:8 * a + 6 * b, hard:true, short:a + ' × 8 = ' + (8 * a) + ',  ' + b + ' × 6 = ' + (6 * b) + ',  ' + (8 * a) + ' + ' + (6 * b) + ' = ' + (8 * a + 6 * b), text:{
+      de:'Im Glas krabbeln ' + a + ' Spinnen und ' + b + ' Käfer. Spinnen haben 8 Beine, Käfer 6. Wie viele Beine sind es zusammen?',
+      es:'En el tarro hay ' + a + ' arañas y ' + b + ' escarabajos. Las arañas tienen 8 patas y los escarabajos 6. ¿Cuántas patas hay en total?',
+      fa:'در شیشه ' + F(a) + ' عنکبوت و ' + F(b) + ' سوسک هست. عنکبوت ۸ پا دارد و سوسک ۶ پا. روی هم چند پا است؟' } }; },
+  () => { const p = who(), a = ri(6, 30);
+    return { kind:'mix', em:'🔵', right:3 * a, hard:true, short:a + ' × 2 = ' + (2 * a) + ',  ' + a + ' + ' + (2 * a) + ' = ' + (3 * a), text:{
+      de:p.n + ' hat ' + a + ' Murmeln. ' + p.n + (/s$/.test(p.n) ? '’' : 's') + ' Bruder hat doppelt so viele. Wie viele Murmeln haben beide zusammen?',
+      es:p.n + ' tiene ' + a + ' canicas. Su hermano tiene el doble. ¿Cuántas canicas tienen entre los dos?',
+      fa:p.fa + ' ' + F(a) + ' تیله دارد. برادرش دو برابر او تیله دارد. روی هم چند تیله دارند؟' } }; },
+  () => { const h = ri(6, 14), n = 2 * h, c = ri(2, h - 2);
+    return { kind:'mix', em:'🤸', right:h - c, hard:true, short:n + ' ÷ 2 = ' + h + ',  ' + h + ' − ' + c + ' = ' + (h - c), text:{
+      de:'In der Turnhalle sind ' + n + ' Kinder. Die Hälfte spielt Fußball, ' + c + ' spielen Basketball, der Rest springt Seil. Wie viele springen Seil?',
+      es:'En el gimnasio hay ' + n + ' niños. La mitad juega al fútbol, ' + c + ' juegan al baloncesto y el resto salta a la comba. ¿Cuántos saltan a la comba?',
+      fa:'در سالن ورزش ' + F(n) + ' بچه هست. نصفشان فوتبال بازی می‌کنند، ' + F(c) + ' نفر بسکتبال و بقیه طناب‌بازی. چند نفر طناب‌بازی می‌کنند؟' } }; },
+  () => { const k = ri(3, 6), q = ri(3, 7), r = ri(1, k - 1), n = k * q + r;
+    return { kind:'mix', em:'⛺', right:q + 1, hard:true, short:n + ' ÷ ' + k + ' = ' + q + ' Rest ' + r + ',  ' + q + ' + 1 = ' + (q + 1), text:{
+      de:n + ' Kinder fahren ins Zeltlager. In ein Zelt passen ' + k + ' Kinder. Wie viele Zelte braucht man mindestens, damit alle schlafen können?',
+      es:n + ' niños van de campamento. En cada tienda caben ' + k + '. ¿Cuántas tiendas hacen falta como mínimo para que todos duerman?',
+      fa:F(n) + ' بچه به اردو می‌روند. در هر چادر ' + F(k) + ' بچه جا می‌شود. دست‌کم چند چادر لازم است تا همه بخوابند؟' } }; },
+  () => { const q = ri(4, 12), g = ri(5, 15), t = 3 * q + g;
+    return { kind:'mix', em:'🎀', right:q, hard:true, short:t + ' − ' + g + ' = ' + (3 * q) + ',  ' + (3 * q) + ' ÷ 3 = ' + q, text:{
+      de:'Drei Geschwister haben zusammen ' + t + ' €. Sie kaufen ein Geschenk für Mama für ' + g + ' € und teilen den Rest gerecht. Wie viel bekommt jedes?',
+      es:'Tres hermanos tienen juntos ' + t + ' €. Compran un regalo para mamá de ' + g + ' € y reparten el resto por igual. ¿Cuánto recibe cada uno?',
+      fa:'سه خواهر و برادر روی هم ' + F(t) + ' یورو دارند. برای مامان یک هدیهٔ ' + F(g) + ' یورویی می‌خرند و بقیه را مساوی تقسیم می‌کنند. به هر کدام چقدر می‌رسد؟' } }; },
+  () => { const p = who(), a = pickOne([10, 15, 20]), b = ri(3, 6), c = ri(5, 30);
+    return { kind:'mix', em:'🎹', right:a * b + c, hard:true, short:b + ' × ' + a + ' = ' + (a * b) + ',  ' + (a * b) + ' + ' + c + ' = ' + (a * b + c), text:{
+      de:p.n + ' übt an ' + b + ' Tagen jeweils ' + a + ' Minuten Klavier und am Samstag noch ' + c + ' Minuten extra. Wie viele Minuten sind das zusammen?',
+      es:p.n + ' practica piano ' + a + ' minutos durante ' + b + ' días y el sábado ' + c + ' minutos más. ¿Cuántos minutos son en total?',
+      fa:p.fa + ' ' + F(b) + ' روز، هر روز ' + F(a) + ' دقیقه پیانو تمرین می‌کند و شنبه ' + F(c) + ' دقیقهٔ دیگر. روی هم چند دقیقه است؟' } }; },
+  () => { const a = ri(20, 45), b = ri(8, 25), c = ri(5, 20);
+    return { kind:'mix', em:'🚋', right:a - b + c, hard:true, short:a + ' − ' + b + ' = ' + (a - b) + ',  ' + (a - b) + ' + ' + c + ' = ' + (a - b + c), text:{
+      de:'In der Straßenbahn sitzen ' + a + ' Leute. An der Haltestelle steigen ' + b + ' aus und ' + c + ' ein. Wie viele sitzen jetzt in der Bahn?',
+      es:'En el tranvía van ' + a + ' personas. En la parada se bajan ' + b + ' y suben ' + c + '. ¿Cuántas personas van ahora?',
+      fa:'در تراموا ' + F(a) + ' نفر نشسته‌اند. در ایستگاه ' + F(b) + ' نفر پیاده و ' + F(c) + ' نفر سوار می‌شوند. حالا چند نفر در تراموا هستند؟' } }; },
+  () => { const p = who(), n = ri(3, 6), b = ri(2, 4), e = ri(1, 3);
+    return { kind:'mix', em:'🍓', right:n * b + e, hard:true, short:n + ' × ' + b + ' = ' + (n * b) + ',  ' + (n * b) + ' + ' + e + ' = ' + (n * b + e), text:{
+      de:p.n + ' kauft ' + n + ' Schälchen Erdbeeren zu je ' + b + ' € und eine Sahne für ' + e + ' €. Wie viel bezahlt ' + p.er + '?',
+      es:p.n + ' compra ' + n + ' cajitas de fresas a ' + b + ' € cada una y una nata por ' + e + ' €. ¿Cuánto paga?',
+      fa:p.fa + ' ' + F(n) + ' بسته توت‌فرنگی هر کدام ' + F(b) + ' یورو و یک خامه به قیمت ' + F(e) + ' یورو می‌خرد. چقدر پول می‌دهد؟' } }; },
 ];
-function makeWord() { return pickOne(WORD)(); }
+// shuffled bag: every problem type comes up once before any repeats (remembered on this device)
+let wordBag = load('emWordBag', []).filter(i => i < WORD.length);
+function makeWord() {
+  if (!wordBag.length) {
+    wordBag = WORD.map((_, i) => i);
+    for (let i = wordBag.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [wordBag[i], wordBag[j]] = [wordBag[j], wordBag[i]]; }
+  }
+  const i = wordBag.pop(); save('emWordBag', wordBag);
+  return WORD[i]();
+}
 
 function pickFact() {
   // a wrong answer comes back after 3 other questions
